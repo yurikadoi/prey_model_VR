@@ -31,6 +31,8 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
+vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+%%
 vr.startLocation=0;
 vr.currTrack_ID=1;
 
@@ -55,10 +57,10 @@ end
 %%
 if ~vr.debugMode
     disp('daqreset')
-    daqreset %reset DAQ in case it's still in use by a previous Matlab program
-    
-    VirMenInitDAQ_noLaser;
-    
+    if vr.daq_flag == 1
+        daqreset %reset DAQ in case it's still in use by a previous Matlab program
+        VirMenInitDAQ_noLaser;
+    end
     vr.pathname = 'C:\ViRMEn\ViRMeN_data\prey_model';
     cd(vr.pathname);
     vr.filename = datestr(now,'yyyymmdd_HHMM');
@@ -234,16 +236,20 @@ vr.start_flag = 0;
 vr.occur_time=0;
 vr.roll_flag = 1;
 %% DELIVER 2uL WATER TO START SESSION
-if ~vr.debugMode
-    out_data = vr.onLg;
-    vr.totalWater = vr.totalWater + vr.onLg_h2o;
-    putdata(vr.ao, out_data);
-    start(vr.ao);
-    trigger(vr.ao);
-    display(datestr(now));
-    
-    [data, time, abstime] = getdata(vr.ai, vr.ai.SamplesAvailable*1.02);
-    figure; plot(time, data(:, [2 3 4 5])); % plot analog input
+if vr.daq_flag == 1
+    if ~vr.debugMode
+        out_data = vr.onLg;
+        vr.totalWater = vr.totalWater + vr.onLg_h2o;
+        
+        putdata(vr.ao, out_data);
+        start(vr.ao);
+        trigger(vr.ao);
+        
+        display(datestr(now));
+        
+        [data, time, abstime] = getdata(vr.ai, vr.ai.SamplesAvailable*1.02);
+        figure; plot(time, data(:, [2 3 4 5])); % plot analog input
+    end
 end
 %% --- RUNTIME code: executes on every iteration of the ViRMEn engine.
 function vr = runtimeCodeFun(vr)
@@ -273,9 +279,11 @@ if vr.ITI==0 && vr.abort_flag ==0
         vr.abort_flag = 1;
         out_data=vr.event_abortTrial_outdata;
         vr.cantstopwontstop_queue=zeros(vr.cantstopwontstop_queue_len,1);
-        putdata(vr.ao, out_data);
-        start(vr.ao);
-        trigger(vr.ao);
+        if vr.daq_flag == 1
+            putdata(vr.ao, out_data);
+            start(vr.ao);
+            trigger(vr.ao);
+        end
     end
     
     %% reward earned: switch to ITI
@@ -504,9 +512,11 @@ if vr.rewEarned > 0
             if ~vr.debugMode
                 disp('outdata onSm');
                 out_data = vr.onSm;
-                putdata(vr.ao, out_data);
-                start(vr.ao);
-                trigger(vr.ao);
+                if vr.daq_flag == 1
+                    putdata(vr.ao, out_data);
+                    start(vr.ao);
+                    trigger(vr.ao);
+                end
             end
             
         case 4
@@ -515,9 +525,11 @@ if vr.rewEarned > 0
             if ~vr.debugMode
                 disp('outdata onMd');
                 out_data = vr.onLg;
-                putdata(vr.ao, out_data);
-                start(vr.ao);
-                trigger(vr.ao);
+                if vr.daq_flag == 1
+                    putdata(vr.ao, out_data);
+                    start(vr.ao);
+                    trigger(vr.ao);
+                end
             end
             
     end
@@ -584,9 +596,11 @@ if vr.event_newTrial > 0 % sent AO signal for new trial signaling trial type
         disp('event_newTrial');
     end
     out_data = vr.event_newTrial_outdata{vr.B}{vr.A};
-    putdata(vr.ao, out_data);
-    start(vr.ao);
-    trigger(vr.ao);
+    if vr.daq_flag == 1
+        putdata(vr.ao, out_data);
+        start(vr.ao);
+        trigger(vr.ao);
+    end
 end
 
 if vr.plotAI>0 % plot relevant data from analog input from previous trial
