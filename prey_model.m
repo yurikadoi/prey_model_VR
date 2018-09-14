@@ -44,8 +44,6 @@ vr.ITI_duration=1; % duration for ITI (value re-drawn each trial)
 % default ITI parameters (set custom per mouse otherwise) - drawn from a
 % psuedo-normal distribution
 
-vr.normDist = 1; % set to 1 if drawing rew distances from normal distribution
-
 vr.startTrial_SW = 0; % keep track of how long mouse takes to start trial after track appears
 
 vr.delay2disappear=.5; % delay until track disappears following reward
@@ -81,6 +79,8 @@ end
 %% determine the index of tracks
 vr.indx_track{1} = vr.worlds{vr.currentWorld}.objects.indices.mainFloor1;
 vr.indx_track{2} = vr.worlds{vr.currentWorld}.objects.indices.mainFloor1B;
+vr.indx_track{3} = vr.worlds{vr.currentWorld}.objects.indices.mainFloor1_bright;
+vr.indx_track{4} = vr.worlds{vr.currentWorld}.objects.indices.mainFloor1B_bright;
 % get all relevant coordinates, etc. for tracks (floors)
 for k = 1:length(vr.indx_track)
     
@@ -134,10 +134,9 @@ vr.STOP_CRIT = 0.025; %default
 vr.queue_len_stop = 30; % default to ~0.5 seconds, make ~1 second later after mouse has learned to stop
 vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1); % make cue array to cycle through
 vr.queue_indx_stop = 1; % indx to cycle through the queue
-vr.cantstopwontstop_queue_len=60;
-vr.cantstopwontstop_queue=zeros(vr.cantstopwontstop_queue_len,1);
-vr.cantstopwontstop_crit=.025;
-vr.cantstopwontstop_queue_indx=1;
+vr.queue_len_start=30;
+vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
+vr.start_queue_indx=1;
 
 vr.plotAI=0; % plots analog input
 
@@ -150,19 +149,31 @@ for iA = 1:6
     end
 end
 vr.progRatio=0; % set > 0 if using progressive ratio for rews
+vr.progRatioStart = 0;
+vr.progRatio_short_Dist = [20 30 40 50 60 70 80 90 100];
+vr.progRatio_long_Dist = 2*vr.progRatio_short_Dist;
 
 switch vr.mouseID
     case 1
-        disp('mouse #1: odin');
-        
-        vr.progRatio=0; % set > 0 if using progressive ratio for rews
+        disp('mouse #1: obiwan');
+        vr.progRatio=1; % set > 0 if using progressive ratio for rews
         vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
-        vr.wait4stop=1;
-        vr.normDist=0; % 1 = yes, using normDist
-        vr.STOP_CRIT = 0.025;
-        vr.queue_len_stop = 60; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
-        vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
         
+        vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
+        vr.STOP_CRIT = 0.025;
+        
+        vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
+        vr.queue_len_start=30;
+        vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
+        vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
+        
+        vr.start4engage = 0;%0: if do not need to start running to engage, 1: if they need to start running to engage
+        vr.start_latency_CRIT = 2;%within how many seconds should they start running to engage with the trial''
+        
+        vr.progRatioStart = 1;% 9:is the maximum and goal of the training
+        
+        vr.freq_high_value=1/15;
+        vr.freq_low_value=1/5;
         
     otherwise
         disp('error: MOUSE ID NOT RECOGNIZED');
@@ -174,8 +185,6 @@ if vr.debugMike
     vr.dist_minmeanmaxstd = [10 20 30 5];
     vr.ITI_minmeanmaxstd = [1 2 3 .5];
 end
-
-%vr.progRatioDist = [5 10 15 20 25 30 35 40 45 50 60 70 80 90 100]; % distances for rews at levels of progressive ratio
 
 vr.CBA = 0;
 vr.A = 0; vr.B = 0; vr.C = 0;
@@ -200,8 +209,9 @@ vr.onLg =  [5 * ones(floor(vr.LgRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onLg = [vr
 % end
 
 mouseID = vr.mouseID; display(mouseID);
-
-
+vr.progRatio = vr.progRatioStart;
+vr.short_distance = vr.progRatio_short_Dist(vr.progRatio);
+vr.long_distance = vr.progRatio_long_Dist(vr.progRatio);
 
 %% move correct track into place, other away/disappear, initiate variables for must run, etc
 %vr.CBA = vr.trialTypes(vr.thisTrial); % vr.C = task ID, vr.B = track ID, vr.A = reward size (uL)
@@ -213,25 +223,29 @@ m=rand(1);
 if m > 0.5
     vr.B=1;
     vr.A=4;
-    vr.rewLocation = 40;
+    vr.rewLocation = vr.short_distance;
 else
     vr.B=2;
     vr.A=2;
-    vr.rewLocation = 80;
+    vr.rewLocation = vr.long_distance;
 end
 switch vr.B
     case 1
-        currTrack=1; otherTrack=2;
+        vr.currTrack_ID=1; otherTrack=2; curr_brightTrack=3; other_brightTrack = 4;
     case 2
-        currTrack=2; otherTrack=1;
+        vr.currTrack_ID=2; otherTrack=1; curr_brightTrack=4; other_brightTrack = 3;
 end
 vr.CBA = vr.A + vr.B*10 + vr.C*100;
 
 
-vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{currTrack}) = 1;
+vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 1;
 vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{otherTrack}) = 0;
-vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{currTrack}) = vr.track_zOrig{currTrack};
+vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{curr_brightTrack}) = 0;
+vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{other_brightTrack}) = 0;
+vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID};
 vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{otherTrack}) = vr.track_zOrig{otherTrack}+60;
+vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{curr_brightTrack}) = vr.track_zOrig{curr_brightTrack}+60;
+vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{other_brightTrack}) = vr.track_zOrig{other_brightTrack}+60;
 
 vr.abort_flag = 0;
 vr.start_flag = 0;
@@ -260,32 +274,45 @@ end
 
 if vr.ITI==0 && vr.abort_flag ==0
     vr.startTrial_SW = vr.startTrial_SW + vr.dt;
-    vr.cantstopwontstop_queue(vr.cantstopwontstop_queue_indx) = vr.dp_cache(:,2); % add current speed to queue
-    vr.cantstopwontstop_queue_indx = vr.cantstopwontstop_queue_indx + 1; % move to next spot in queue
-    if nanmin(vr.cantstopwontstop_queue(~isnan(vr.cantstopwontstop_queue))) > .05
+    vr.spd_circ_queue_start(vr.start_queue_indx) = vr.dp_cache(:,2); % add current speed to queue
+    vr.start_queue_indx = vr.start_queue_indx + 1; % move to next spot in queue
+    if nanmin(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))) > .05
         vr.start_flag=1;
     end
-    if vr.cantstopwontstop_queue_indx > vr.cantstopwontstop_queue_len % start over beginning of queue if at the end
-        vr.cantstopwontstop_queue_indx = 1;
+    if vr.start_queue_indx > vr.queue_len_start % start over beginning of queue if at the end
+        vr.start_queue_indx = 1;
     end
     %% MOUSE DID NOT RUN, ABORT TRIAL
-    %if vr.cantstopwontstop_queue_indx>(vr.cantstopwontstop_queue_len-1) && nanmax(vr.cantstopwontstop_queue(~isnan(vr.cantstopwontstop_queue))) < .05
-    if vr.start_flag == 0 && vr.startTrial_SW>2 && nanmax(vr.cantstopwontstop_queue(~isnan(vr.cantstopwontstop_queue))) < .05
-        disp('mouse aborted trial')
-        vr.ITI=1.5; % *initialize ITI after abort trial
-        vr.rewTrials{vr.B} = [vr.rewTrials{vr.B} 0]; % add zero for unrew trial
-        vr.abort_flag = 1;
-        out_data=vr.event_abortTrial_outdata;
-        vr.cantstopwontstop_queue=zeros(vr.cantstopwontstop_queue_len,1);
-        %             putdata(vr.ao, out_data);
-        %             start(vr.ao);
-        %             trigger(vr.ao);
+    %if vr.start_queue_indx>(vr.queue_len_start-1) && nanmax(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))) < .05
+    if vr.start4engage == 1
+        if vr.start_flag == 0 && vr.startTrial_SW>vr.start_latency_CRIT && nanmax(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))) < .05
+            disp('mouse aborted trial')
+            vr.ITI=1.5; % *initialize ITI after abort trial
+            vr.rewTrials{vr.B} = [vr.rewTrials{vr.B} 0]; % add zero for unrew trial
+            vr.abort_flag = 1;
+            out_data=vr.event_abortTrial_outdata;
+            vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
+            %             putdata(vr.ao, out_data);
+            %             start(vr.ao);
+            %             trigger(vr.ao);
+        end
     end
-    
     %% reward earned: switch to ITI
     if vr.position(2) >= vr.rewLocation
         disp('position > rewLocation')
         vr.endLocation=vr.position(2); % store location of trial completed to save later
+        vr.ITI = 0.5;
+    end
+    if vr.ITI == 0.5
+        disp('aaaa')
+        disp(vr.currTrack_ID)
+        disp(vr.trackIndx{1})
+        %make the track brighter to let the mouse know this is the goal
+        vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 0;
+        vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID+2}) = 1;
+        vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID}+60;
+        vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID+2}) = vr.track_zOrig{vr.currTrack_ID+2};
+        
         vr.ITI=1;
         vr.rewEarned = vr.A;
         vr.rewTrials{vr.B}=[vr.rewTrials{vr.B} 1]; % add 1 for successful rew trials
@@ -296,11 +323,6 @@ if vr.ITI==0 && vr.abort_flag ==0
     if vr.atStartLocation==1 && vr.position(2) > vr.startLocation+2
         
         vr.atStartLocation = 0; %reset to start location
-        % set distance to reward
-        if vr.progRatio > 0 && vr.normDist==0
-            vr.rewLocation = vr.progRatioDist(vr.progRatio);
-            progRatioLocation=vr.rewLocation; display(progRatioLocation)
-        end
     end
     
 end
@@ -328,14 +350,18 @@ if vr.ITI > 0
         % make track(s) disappear
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{2}) = 0;
+        vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{3}) = 0;
+        vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{4}) = 0;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{1}) = vr.track_zOrig{1}+60;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{2}) = vr.track_zOrig{2}+60;
+        vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{3}) = vr.track_zOrig{3}+60;
+        vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
         while 1
             if vr.roll_flag == 1
                 disp('dice rolled')
                 while 1
                     n=rand(120,1);
-                    freq_track1=1/15;
+                    freq_track1=vr.freq_high_value;
                     track1_occur_time=find(n < freq_track1);
                     if isempty(track1_occur_time)
                     else
@@ -345,7 +371,7 @@ if vr.ITI > 0
                 
                 while 1
                     n=rand(120,1);
-                    freq_track2=1/5;
+                    freq_track2=vr.freq_low_value;
                     track2_occur_time=find(n < freq_track2);
                     if isempty(track2_occur_time)
                     else
@@ -475,14 +501,22 @@ if vr.ITI > 0
         currentCBA = vr.CBA; display(currentCBA);
         
         % make tracks appear, move into place
+        vr.progRatio=vr.progRatioStart+floor(vr.trialNum/20);
+        if vr.progRatio > 9
+            vr.progRatio=9;
+        end
+        vr.short_distance = vr.progRatio_short_Dist(vr.progRatio);
+        vr.long_distance = vr.progRatio_long_Dist(vr.progRatio);
         disp('tracks appear')
+        disp('dist prog ratio is')
+        disp(vr.progRatio)
         switch vr.B
             case 1
                 vr.currTrack_ID=1;
-                vr.rewLocation = 40;
+                vr.rewLocation = vr.short_distance;
             case 2
                 vr.currTrack_ID=2;
-                vr.rewLocation = 80;
+                vr.rewLocation = vr.long_distance;
         end
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 1;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID};
