@@ -31,7 +31,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 vr.currTrack_ID=1;
@@ -149,8 +149,11 @@ for iA = 1:6
         vr.event_newTrial_outdata{iB}{iA} = [zeros(10,1) ((iA+.1*iB)/2)*ones(10,1)];
     end
 end
-vr.progRatio=0; % set > 0 if using progressive ratio for rews
 
+vr.progRatio=0; % set > 0 if using progressive ratio for rews
+vr.progRatioStart = 0;
+vr.progRatio_short_Dist = [20 30 40 50 60 70 80 90 100];
+vr.progRatio_long_Dist = 2*vr.progRatio_short_Dist;
 switch vr.mouseID
     case 1
         disp('mouse #1: obiwan');
@@ -631,12 +634,14 @@ if vr.event_newTrial > 0 % sent AO signal for new trial signaling trial type
         trigger(vr.ao);
     end
 end
-
-if vr.plotAI>0 % plot relevant data from analog input from previous trial
-    vr.plotAI=0;
-    data = peekdata(vr.ai, min([vr.ai.SamplesAvailable*1.02 vr.SR * 20])); % 1000 * 8
-    flushdata(vr.ai, 'all');
-    plot(data(:,2:5))
+if vr.daq_flag==1
+    
+    if vr.plotAI>0 % plot relevant data from analog input from previous trial
+        vr.plotAI=0;
+        data = peekdata(vr.ai, min([vr.ai.SamplesAvailable*1.02 vr.SR * 20])); % 1000 * 8
+        flushdata(vr.ai, 'all');
+        plot(data(:,2:5))
+    end
 end
 
 %% --- TERMINATION code: executes after the ViRMEn engine stops.
@@ -715,7 +720,8 @@ if ~vr.debugMode %save all files and move to appropriate folders
         %move daq file from temp folder
         daqPath = 'C:\VirmenDataTmp';
         daqDir = dir('C:\VirmenDataTmp');
-        
-        movefile([daqPath '\' daqDir(end).name],[vr.pathname '\' answer{1} '\' sessionDate '\DaqData',datestr(now,'mmdd'),'.daq']);
+        if vr.daq_flag == 1
+            movefile([daqPath '\' daqDir(end).name],[vr.pathname '\' answer{1} '\' sessionDate '\DaqData',datestr(now,'mmdd'),'.daq']);
+        end
     end
 end
