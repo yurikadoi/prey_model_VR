@@ -1,4 +1,3 @@
-
 % **** NEED TO CALIBRATE 6uL REWARD VALVE OPENING TIME *****
 
 function code = prey_model_w_daq
@@ -31,7 +30,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 vr.currTrack_ID=1;
@@ -308,9 +307,6 @@ if vr.ITI==0 && vr.abort_flag ==0
         vr.ITI = 0.5;
     end
     if vr.ITI == 0.5
-        %disp('aaaa')
-        disp(vr.currTrack_ID)
-        disp(vr.trackIndx{1})
         %make the track brighter to let the mouse know this is the goal
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 0;
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID+2}) = 1;
@@ -666,14 +662,13 @@ while iTrialType<=2 && ~isempty(vr.rewTrials{iTrialType})
     %display(startLatency)
     iTrialType=iTrialType+1;
 end
-
-% if ~vr.debugMode
-%     fclose all;
-%     %turn off camera - wait, what camera?
-%     putvalue(vr.dio.Line(2), 0);
-% %     stop(vr.ai);
-% end
-
+if vr.daq_flag == 1
+    if ~vr.debugMode
+        fclose all;
+        putvalue(vr.dio.Line(2), 0);
+        stop(vr.ai);
+    end
+end
 endTime = datestr(rem(now,1));
 
 mID = vr.mouseID; display(mID);
