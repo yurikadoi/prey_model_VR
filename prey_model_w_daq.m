@@ -30,7 +30,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 vr.currTrack_ID=1;
@@ -137,6 +137,12 @@ vr.queue_indx_stop = 1; % indx to cycle through the queue
 vr.queue_len_start=30;
 vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
 vr.start_queue_indx=1;
+vr.handling_time_1=10;
+vr.handling_time_2=20;
+vr.lambda_1A = 1/60;
+vr.lambda_1B = 1/30;
+vr.lambda_1C = 1/15;
+vr.lambda_2 = 1/30;
 
 vr.plotAI=0; % plots analog input
 
@@ -161,19 +167,22 @@ switch vr.mouseID
         
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
         vr.STOP_CRIT = 0.025;
-        
+        vr.START_CRIT = 0.05;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
         vr.queue_len_start=30;
         vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
         vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
         
         vr.start4engage = 0;%0: if do not need to start running to engage, 1: if they need to start running to engage
-        vr.start_latency_CRIT = 2;%within how many seconds should they start running to engage with the trial''
+        vr.start_latency_CRIT = 2;%within how many seconds should they start running to engage with the trial
         
         vr.progRatioStart = 1;% 9:is the maximum and goal of the training
         
-        vr.freq_high_value=1/15;
-        vr.freq_low_value=1/5;
+        %         vr.freq_high_value=vr.lambda_1A;
+        %         vr.freq_low_value=vr.lambda_2;
+        vr.freq_high_value=1/3;
+        vr.freq_low_value=1/3;
+        vr.y_disposition = 0.385;
         
         
     otherwise
@@ -275,11 +284,21 @@ if vr.trialTimer_On>0
 end
 
 if vr.ITI==0 && vr.abort_flag ==0
+    
+    %vr.velocity = [0 10 0 0]
     vr.startTrial_SW = vr.startTrial_SW + vr.dt;
     vr.spd_circ_queue_start(vr.start_queue_indx) = vr.dp_cache(:,2); % add current speed to queue
     vr.start_queue_indx = vr.start_queue_indx + 1; % move to next spot in queue
-    if nanmin(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))) > .05
-        vr.start_flag=1;
+    if vr.start4engage == 1
+        if nanmin(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))) > vr.START_CRIT
+            vr.start_flag=1;
+            vr.dp=[0 vr.y_disposition 0 0];
+            
+        end
+%     else % track immediately start moving once presented
+%         vr.dp=[0 vr.y_disposition 0 0];
+    elseif vr.startTrial_SW>vr.start_latency_CRIT %track is posed until start_latency_CRIT sec has passed
+        vr.dp=[0 vr.y_disposition 0 0];
     end
     if vr.start_queue_indx > vr.queue_len_start % start over beginning of queue if at the end
         vr.start_queue_indx = 1;
@@ -287,17 +306,21 @@ if vr.ITI==0 && vr.abort_flag ==0
     %% MOUSE DID NOT RUN, ABORT TRIAL
     %if vr.cantstopwontstop_queue_indx>(vr.cantstopwontstop_queue_len-1) && nanmax(vr.cantstopwontstop_queue(~isnan(vr.cantstopwontstop_queue))) < .05
     if vr.start4engage == 1
-        if vr.start_flag == 0 && vr.startTrial_SW>vr.start_latency_CRIT && nanmax(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))) < .05
+        if vr.start_flag == 0 && vr.startTrial_SW>vr.start_latency_CRIT && nanmax(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))) < vr.START_CRIT
             disp('mouse aborted trial')
             vr.ITI=1.5; % *initialize ITI after abort trial
             vr.rewTrials{vr.B} = [vr.rewTrials{vr.B} 0]; % add zero for unrew trial
             vr.abort_flag = 1;
             out_data=vr.event_abortTrial_outdata;
             vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
-            putdata(vr.ao, out_data);
-            start(vr.ao);
-            trigger(vr.ao);
+            if vr.daq_flag==1
+                putdata(vr.ao, out_data);
+                start(vr.ao);
+                trigger(vr.ao);
+            end
+            
         end
+    else
     end
     
     %% reward earned: switch to ITI
