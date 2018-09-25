@@ -173,7 +173,7 @@ switch vr.mouseID
         vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
         vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
         
-        vr.start4engage = 0;%0: if do not need to start running to engage, 1: if they need to start running to engage
+        vr.start4engage = 1;%0: if do not need to start running to engage, 1: if they need to start running to engage
         vr.start_latency_CRIT = 2;%within how many seconds should they start running to engage with the trial
         
         vr.progRatioStart = 1;% 9:is the maximum and goal of the training
@@ -212,6 +212,8 @@ vr.vSnd(vr.iSndOff:end) = 0;
 vr.onSm =  [5 * ones(floor(vr.SmRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onSm = [vr.onSm zeros(length(vr.onSm),1)];
 vr.onLg =  [5 * ones(floor(vr.LgRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onLg = [vr.onLg zeros(length(vr.onLg),1)];
 
+%sound
+vr.sound = [5 * ones(floor(25/1000*vr.SR),1 ); zeros(1, 1)]; vr.sound = [vr.sound zeros(length(vr.sound),1)];
 
 % if ~vr.debugMode
 %     % start generating pulse by signaling to Arduino board
@@ -284,7 +286,13 @@ if vr.trialTimer_On>0
 end
 
 if vr.ITI==0 && vr.abort_flag ==0
-    
+    %output to speaker to make the cue sound
+    if ~vr.debugMode
+        out_data = vr.sound ;
+        putdata(vr.ao, out_data);
+        start(vr.ao);
+        trigger(vr.ao);
+    end
     %vr.velocity = [0 10 0 0]
     vr.startTrial_SW = vr.startTrial_SW + vr.dt;
     vr.spd_circ_queue_start(vr.start_queue_indx) = vr.dp_cache(:,2); % add current speed to queue
@@ -295,8 +303,8 @@ if vr.ITI==0 && vr.abort_flag ==0
             vr.dp=[0 vr.y_disposition 0 0];
             
         end
-%     else % track immediately start moving once presented
-%         vr.dp=[0 vr.y_disposition 0 0];
+        %     else % track immediately start moving once presented
+        %         vr.dp=[0 vr.y_disposition 0 0];
     elseif vr.startTrial_SW>vr.start_latency_CRIT %track is posed until start_latency_CRIT sec has passed
         vr.dp=[0 vr.y_disposition 0 0];
     end
