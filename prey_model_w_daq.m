@@ -181,9 +181,11 @@ switch vr.mouseID
         
         vr.progRatioStart = 1;% 9:is the maximum and goal of the training
         
-        vr.freq_high_value=vr.lambda_1A;
-        vr.freq_low_value=vr.lambda_2;
-        
+%         vr.freq_high_value=vr.lambda_1A;
+%         vr.freq_low_value=vr.lambda_2;
+        vr.freq_high_value=1/3;
+        vr.freq_low_value=1/3;
+        %vr.setSpeed = 10;
         vr.y_disposition = 0.385;
         
         
@@ -279,6 +281,8 @@ end
 function vr = runtimeCodeFun(vr)
 
 vr.dp_cache = vr.dp; % cache current velocity so value measured even if changed to zero
+%constant speed from Mike's code
+%vr.dp(2) = 0;
 
 if vr.trialTimer_On>0
     vr.trialTimer_SW = vr.trialTimer_SW + vr.dt;
@@ -286,26 +290,32 @@ end
 
 if vr.ITI==0 && vr.abort_flag ==0
     %output to speaker to make the cue sound
-    if ~vr.debugMode
-        if vr.daq_flag == 1
-            out_data = vr.sound;
-            putdata(vr.ao, out_data);
-            start(vr.ao);
-            trigger(vr.ao);
-        end
-    end
+%     if ~vr.debugMode
+%         if vr.daq_flag == 1
+%             out_data = vr.sound;
+%             putdata(vr.ao, out_data);
+%             start(vr.ao);
+%             trigger(vr.ao);
+%         end
+%     end
     %vr.velocity = [0 10 0 0]
+    vr.dp=[0 0 0 0];
     vr.startTrial_SW = vr.startTrial_SW + vr.dt;
     vr.spd_circ_queue_start(vr.start_queue_indx) = vr.dp_cache(:,2); % add current speed to queue
     vr.start_queue_indx = vr.start_queue_indx + 1; % move to next spot in queue
     if vr.start4engage == 1
         %disp(nonzeros(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))))
-        if nanmin(nonzeros(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start)))) > vr.START_CRIT
+        if vr.start_flag==0 & nanmin(nonzeros(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start)))) > vr.START_CRIT
             vr.start_flag=1;
-            vr.dp=[0 vr.y_disposition 0 0];
+            
+            %vr.position(2) = vr.position(2) + vr.setSpeed*vr.dt;
+            
+            
         end
-        %     else % track immediately start moving once presented
-        %         vr.dp=[0 vr.y_disposition 0 0];
+
+    end
+    if  vr.start_flag==1
+        vr.dp=[0 vr.y_disposition 0 0];
     end
     if vr.start_queue_indx > vr.queue_len_start % start over beginning of queue if at the end
         vr.start_queue_indx = 1;
@@ -401,6 +411,7 @@ if vr.ITI==0 && vr.abort_flag ==0
 end
 
 if vr.ITI == 0.5
+    vr.dp=[0 0 0 0];
     %make the track brighter to let the mouse know this is the goal
     vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 0;
     vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID+2}) = 1;
@@ -409,7 +420,11 @@ if vr.ITI == 0.5
     vr.ITI=1;
     vr.rewEarned = vr.A;
     vr.rewTrials{vr.B}=[vr.rewTrials{vr.B} 1]; % add 1 for successful rew trials
-    vr.trialTimer_On=0; % turn off trial timer
+    vr.trialTimer_On=0; % turn off trial time
+    
+    vr.position(2)=vr.position(2);
+    disp('bright')
+    disp(vr.dp)
 end
 %% *** NEW TRIAL START: Leave startLocation
 if vr.atStartLocation==1 && vr.position(2) > vr.startLocation+2
@@ -423,6 +438,7 @@ end
 % ITI #s: 1 = initialize after reward, 1.5 init after abort, 2 = track disappears after delay following reward
 % 3 = waiting before eligible to start new trial, 4 = waiting to detect stop before initiating new trial
 if vr.ITI > 0
+    vr.dp=[0 0 0 0];
     %% initialize ITI
     if vr.ITI==1 % initialize after rewarded trial
         
@@ -436,6 +452,7 @@ if vr.ITI > 0
     
     %% track disappears following delay after reward(ITI=2) or immediately after aborted trial(ITI=2.5)
     if (vr.ITI==2 && vr.ITI_SW >= vr.delay2disappear) || vr.ITI==2.5
+        
         disp('track disappear')
         vr.ITI=3;
         % make track(s) disappear
