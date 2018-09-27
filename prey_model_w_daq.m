@@ -1,4 +1,5 @@
-% **** NEED TO CALIBRATE 6uL REWARD VALVE OPENING TIME *****
+% MB edits 9-27-18 2pm rig
+
 %coin heads: prey will presented, coin tails: prey will not presented
 
 function code = prey_model_w_daq
@@ -189,7 +190,35 @@ switch vr.mouseID
         
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
         vr.STOP_CRIT = 0.06;
-        vr.START_CRIT = 0.1;
+        vr.START_CRIT = 0.08;
+        vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
+        vr.queue_len_start=30;
+        vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
+        vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
+        
+        vr.start4engage = 1;%0: if do not need to start running to engage, 1: if they need to start running to engage
+        vr.start_latency_CRIT = 5;%within how many seconds should they start running to engage with the trial
+        
+        vr.progRatioStart = 1;% 9:is the maximum and goal of the training
+        if vr.debugYurika == 0
+            vr.freq_high_value=vr.lambda_1B;
+            vr.freq_low_value=vr.lambda_2;
+        else
+            vr.freq_high_value=1/4;
+            vr.freq_low_value=1/4;
+        end
+        %vr.setSpeed = 10;
+        vr.y_disposition = 0.15;
+        
+        vr.wait4reappear_CRIT=2;
+    case 2
+        disp('mouse #2: skywalker');
+        vr.progRatio=1; % set > 0 if using progressive ratio for rews
+        vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
+        
+        vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
+        vr.STOP_CRIT = 0.06;
+        vr.START_CRIT = 0.08;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
         vr.queue_len_start=30;
         vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
@@ -211,6 +240,34 @@ switch vr.mouseID
         
         vr.wait4reappear_CRIT=2;
         
+    case 3
+        disp('mouse 3');
+        vr.progRatio=1; % set > 0 if using progressive ratio for rews
+        vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
+        
+        vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
+        vr.STOP_CRIT = 0.06;
+        vr.START_CRIT = 0.045;
+        vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
+        vr.queue_len_start=20;
+        vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
+        vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
+        
+        vr.start4engage = 1;%0: if do not need to start running to engage, 1: if they need to start running to engage
+        vr.start_latency_CRIT = 15;%within how many seconds should they start running to engage with the trial
+        
+        vr.progRatioStart = 1;% 9:is the maximum and goal of the training
+        if vr.debugYurika == 0
+            vr.freq_high_value=2*vr.lambda_1B;
+            vr.freq_low_value=vr.lambda_2;
+        else
+            vr.freq_high_value=1/4;
+            vr.freq_low_value=1/4;
+        end
+        %vr.setSpeed = 10;
+        vr.y_disposition = 0.15;
+        
+        vr.wait4reappear_CRIT=2;
         
     otherwise
         disp('error: MOUSE ID NOT RECOGNIZED');
@@ -233,7 +290,7 @@ vr.vSnd(vr.iSndOff:end) = 0;
 vr.onSm_outdata =  [5 * ones(floor(vr.SmRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onSm_outdata = [vr.onSm_outdata (4/5)*vr.onSm_outdata];
 vr.onLg_outdata =  [5 * ones(floor(vr.LgRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onLg_outdata = [vr.onLg_outdata (4/5)*vr.onLg_outdata];
 
-%sound
+%sound - ???
 vr.sound = [5 * ones(floor(25/1000*vr.SR),1 ); zeros(1, 1)]; vr.sound = [vr.sound zeros(length(vr.sound),1)];
 
 % if ~vr.debugMode
@@ -284,7 +341,7 @@ vr.occur_time=0;
 vr.roll_flag = 1;
 
 vr.flipping = 0;
-%% DELIVER 2uL WATER TO START SESSION
+%% DELIVER 2uL WATER TO START SESSION - you are delivering large here, not small ***
 if vr.daq_flag == 1
     if ~vr.debugMode
         if vr.daq_flag == 1
@@ -292,7 +349,6 @@ if vr.daq_flag == 1
             vr.totalWater = vr.totalWater + vr.onLg_h2o;
             
             putdata(vr.ao, out_data);
-            disp('line278')
             start(vr.ao);
             trigger(vr.ao);
             
@@ -315,16 +371,16 @@ if vr.trialTimer_On>0
 end
 
 if vr.ITI==0 && vr.abort_flag ==0
-
+    
     %output to speaker to make the cue sound
-%     if ~vr.debugMode
-%         if vr.daq_flag == 1
-%             out_data = vr.sound;
-%             putdata(vr.ao, out_data);
-%             start(vr.ao);
-%             trigger(vr.ao);
-%         end
-%     end
+    %     if ~vr.debugMode
+    %         if vr.daq_flag == 1
+    %             out_data = vr.sound;
+    %             putdata(vr.ao, out_data);
+    %             start(vr.ao);
+    %             trigger(vr.ao);
+    %         end
+    %     end
     %vr.velocity = [0 10 0 0]
     vr.dp=[0 0 0 0];
     vr.startTrial_SW = vr.startTrial_SW + vr.dt;
@@ -344,7 +400,7 @@ if vr.ITI==0 && vr.abort_flag ==0
             
             
         end
-
+        
     end
     if  vr.start_flag > 0
         
@@ -369,7 +425,7 @@ if vr.ITI==0 && vr.abort_flag ==0
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%keep flipping the coin during the start latency
-    if vr.startTrial_SW >= vr.q && vr.q < 5.5 && vr.flipping > 0
+    if vr.startTrial_SW >= vr.q && vr.flipping > 0
         %flip coin
         n=rand(1);
         if n < vr.freq_high_value
@@ -539,7 +595,7 @@ if vr.ITI > 0
         
         vr.searchtime_SW = vr.searchtime_SW + vr.dt;
         if vr.wait4stop > 0 % begin next ITI if do not need to wait for stop, otherwise initialize speed queue
-        
+            
             %reset speed queue to detect mouse stop
             vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
             vr.queue_indx_stop = 1;
@@ -752,7 +808,7 @@ if vr.ITI > 0
         vr.startTrial_latency = 1;
         vr.waiting4start = 1;
         vr.flipping = 1;
-
+        
         disp('w=1,reappearflag=0')
         vr.trialTimer_On=1;
         vr.trialTimer_SW=0; % reset trial timer
