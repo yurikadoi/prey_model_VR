@@ -23,6 +23,7 @@ rng('shuffle'); % shuffles random numvisualber generator at start of task
 %% retrieves values from ViRMEn GUI
 vr.mouseID = eval(vr.exper.variables.mouseID);
 vr.debugMode = eval(vr.exper.variables.debugMode);
+vr.debugYurika = eval(vr.exper.variables.debugYurika);
 vr.RewDuration = eval(vr.exper.variables.RewDuration); % global variable used in other function(s) written by HyungGoo
 vr.scalingStandard = eval(vr.exper.variables.scaling);
 vr.scaledown = 2;
@@ -31,7 +32,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 vr.currTrack_ID=1;
@@ -39,7 +40,12 @@ vr.currTrack_ID=1;
 vr.trialTimer_SW=0;
 vr.trialTimer_On=0;
 
-vr.ITI=0; % set to 1 to start ITI and 2 while remaining in ITI, 0 is ITI off
+%in the beginning of session, start vr.ITI=3 so that it starts with
+%flipping coin
+vr.ITI=3; % set to 1 to start ITI and 2 while remaining in ITI, 0 is ITI off
+vr.searchtime_SW = 0;
+vr.p=0;
+vr.reappear_flag=0;
 vr.ITI_SW=0; % stopwatch for ITI
 vr.ITI_duration=1; % duration for ITI (value re-drawn each trial)
 % default ITI parameters (set custom per mouse otherwise) - drawn from a
@@ -50,6 +56,8 @@ vr.wait4reappear_SW = 0;
 vr.delay2disappear=.5; % delay until track disappears following reward
 vr.delay2reappear = 2; %delay until the next track appears when the coin is flipped heads
 
+vr.engagingSW = 0;
+vr.waiting4start =0;
 if vr.debugMode % set to 'true' in ViRMEn GUI when debugging on the rig to set all means (ITI, distance, etc) to low values for quicker debugging
     disp('DEBUG MODE RUNNING')
 end
@@ -99,9 +107,9 @@ for k = 1:length(vr.indx_track)
 end
 
 vr.totalWater = 0; % keep track of water earned
-vr.trialsData=[]; % trialNum, trialType, rewEarned, rewLocation, endLocation, trialTime
+vr.preyData=[]; % trialNum, trialType, rewEarned, rewLocation, endLocation, trialTime
 vr.trialNum = 1;
-
+vr.RewSize = 0;
 vr.lastRewEarned = [];
 
 vr.trackLength = eval(vr.exper.variables.floor1height);
@@ -139,17 +147,28 @@ vr.queue_indx_stop = 1; % indx to cycle through the queue
 vr.queue_len_start=60;
 vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
 vr.start_queue_indx=1;
-vr.handling_time_1=10;
-vr.handling_time_2=20;
-vr.lambda_1A = 1/60;
-vr.lambda_1B = 1/30;
-vr.lambda_1C = 1/15;
-vr.lambda_2 = 1/30;
+
+if vr.debugYurika == 0
+    vr.handling_time{1}=15;
+    vr.handling_time{2}=30;
+    
+    vr.lambda_1A = 1/60;
+    vr.lambda_1B = 1/30;
+    vr.lambda_1C = 1/15;
+    vr.lambda_2 = 1/30;
+else
+    vr.handling_time{1}=2;
+    vr.handling_time{2}=4;
+end
 vr.p=0;
 vr.q=0;
+vr.r=0;
 vr.plotAI=0; % plots analog input
+vr.wait4reappear_CRIT = 2;
+vr.engageLatency = 0;
 
 %% event signals to send to DAQ board
+vr.event_engageTrial_outdata=[zeros(10,1) 0.5*ones(10,1)];
 vr.event_abortTrial_outdata=[zeros(10,1) -2*ones(10,1)];% upon abort trial, signal negative voltage to DAQ - change value to 1 to trigger
 vr.event_newTrial=0; % when track appears, signal trial type w A.B mV for later readout of trialtype from DAQ file
 for iA = 1:6
@@ -169,10 +188,10 @@ switch vr.mouseID
         vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
         
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
-        vr.STOP_CRIT = 0.025;
-        vr.START_CRIT = 0.05;
+        vr.STOP_CRIT = 0.06;
+        vr.START_CRIT = 0.1;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
-        vr.queue_len_start=60;
+        vr.queue_len_start=30;
         vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
         vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
         
@@ -180,13 +199,17 @@ switch vr.mouseID
         vr.start_latency_CRIT = 5;%within how many seconds should they start running to engage with the trial
         
         vr.progRatioStart = 1;% 9:is the maximum and goal of the training
-        
-%         vr.freq_high_value=vr.lambda_1A;
-%         vr.freq_low_value=vr.lambda_2;
-        vr.freq_high_value=1/3;
-        vr.freq_low_value=1/3;
+        if vr.debugYurika == 0
+            vr.freq_high_value=vr.lambda_1B;
+            vr.freq_low_value=vr.lambda_2;
+        else
+            vr.freq_high_value=1/4;
+            vr.freq_low_value=1/4;
+        end
         %vr.setSpeed = 10;
-        vr.y_disposition = 0.385;
+        vr.y_disposition = 0.15;
+        
+        vr.wait4reappear_CRIT=2;
         
         
     otherwise
@@ -207,8 +230,8 @@ vr.iSndOff = floor(0.08 * vr.SR);
 vr.vSnd(vr.iSndOff:end) = 0;
 
 %water sizes (valve openings)
-vr.onSm =  [5 * ones(floor(vr.SmRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onSm = [vr.onSm zeros(length(vr.onSm),1)];
-vr.onLg =  [5 * ones(floor(vr.LgRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onLg = [vr.onLg zeros(length(vr.onLg),1)];
+vr.onSm_outdata =  [5 * ones(floor(vr.SmRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onSm_outdata = [vr.onSm_outdata (4/5)*vr.onSm_outdata];
+vr.onLg_outdata =  [5 * ones(floor(vr.LgRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onLg_outdata = [vr.onLg_outdata (4/5)*vr.onLg_outdata];
 
 %sound
 vr.sound = [5 * ones(floor(25/1000*vr.SR),1 ); zeros(1, 1)]; vr.sound = [vr.sound zeros(length(vr.sound),1)];
@@ -239,17 +262,18 @@ end
 switch vr.B
     case 1
         vr.currTrack_ID=1; otherTrack=2; curr_brightTrack=3; other_brightTrack = 4;
+        vr.currentA = 4; vr.currentB = 1;
     case 2
         vr.currTrack_ID=2; otherTrack=1; curr_brightTrack=4; other_brightTrack = 3;
+        vr.currentA = 2; vr.currentB = 2;
 end
 vr.CBA = vr.A + vr.B*10 + vr.C*100;
 
-
-vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 1;
+vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 0;
 vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{otherTrack}) = 0;
 vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{curr_brightTrack}) = 0;
 vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{other_brightTrack}) = 0;
-vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID};
+vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID}+60;
 vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{otherTrack}) = vr.track_zOrig{otherTrack}+60;
 vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{curr_brightTrack}) = vr.track_zOrig{curr_brightTrack}+60;
 vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{other_brightTrack}) = vr.track_zOrig{other_brightTrack}+60;
@@ -258,15 +282,17 @@ vr.abort_flag = 0;
 vr.start_flag = 0;
 vr.occur_time=0;
 vr.roll_flag = 1;
-vr.reappear_flag=0;
+
+vr.flipping = 0;
 %% DELIVER 2uL WATER TO START SESSION
 if vr.daq_flag == 1
     if ~vr.debugMode
         if vr.daq_flag == 1
-            out_data = vr.onLg;
+            out_data = vr.onLg_outdata;
             vr.totalWater = vr.totalWater + vr.onLg_h2o;
             
             putdata(vr.ao, out_data);
+            disp('line278')
             start(vr.ao);
             trigger(vr.ao);
             
@@ -289,6 +315,7 @@ if vr.trialTimer_On>0
 end
 
 if vr.ITI==0 && vr.abort_flag ==0
+
     %output to speaker to make the cue sound
 %     if ~vr.debugMode
 %         if vr.daq_flag == 1
@@ -303,26 +330,46 @@ if vr.ITI==0 && vr.abort_flag ==0
     vr.startTrial_SW = vr.startTrial_SW + vr.dt;
     vr.spd_circ_queue_start(vr.start_queue_indx) = vr.dp_cache(:,2); % add current speed to queue
     vr.start_queue_indx = vr.start_queue_indx + 1; % move to next spot in queue
-    if vr.start4engage == 1
-        %disp(nonzeros(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))))
-        if vr.start_flag==0 & nanmin(nonzeros(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start)))) > vr.START_CRIT
+    
+    %disp(vr.waiting4start)
+    if vr.start4engage == 1 && vr.waiting4start ==1
+        %disp((vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))))
+        if vr.start_flag==0 && nanmean(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))) > vr.START_CRIT
+            vr.waiting4start =0;
+            disp('w=0')
             vr.start_flag=1;
-            
+            vr.engageLatency  = vr.trialTimer_SW;
+            vr.engagingSW = 0;
             %vr.position(2) = vr.position(2) + vr.setSpeed*vr.dt;
             
             
         end
 
     end
-    if  vr.start_flag==1
+    if  vr.start_flag > 0
+        
+        if vr.start_flag==1
+            vr.start_flag=2;
+            %engage event signal
+            out_data=vr.event_engageTrial_outdata;
+            vr.flipping = 0;
+            if vr.daq_flag==1
+                putdata(vr.ao, out_data);
+                disp('line333')
+                start(vr.ao);
+                disp('line336')
+                trigger(vr.ao);
+            end
+        end
         vr.dp=[0 vr.y_disposition 0 0];
+        vr.engagingSW = vr.engagingSW + vr.dt;
     end
     if vr.start_queue_indx > vr.queue_len_start % start over beginning of queue if at the end
         vr.start_queue_indx = 1;
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%keep flipping the coin during the start latency
-    if vr.startTrial_SW >= vr.q && vr.q < 5.5
+    if vr.startTrial_SW >= vr.q && vr.q < 5.5 && vr.flipping > 0
         %flip coin
         n=rand(1);
         if n < vr.freq_high_value
@@ -341,13 +388,18 @@ if vr.ITI==0 && vr.abort_flag ==0
             %track1 appears
             vr.B=1;
             vr.reappear_flag=1;
-            vr.wait4reappear_SW = 0 - vr.dt;
+            vr.wait4reappear_SW = 0;
+            vr.r=0;
+            vr.flipping = 0;
             disp('aaaa')
         elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
             %track2 appears
             vr.B=2;
             vr.reappear_flag=1;
-            vr.wait4reappear_SW = 0 - vr.dt;
+            vr.wait4reappear_SW = 0;
+            vr.r=0;
+            vr.flipping = 0;
+            
             disp('bbbb')
         elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
             %flip another coin
@@ -357,14 +409,20 @@ if vr.ITI==0 && vr.abort_flag ==0
                 vr.track1_occur_or_not = 0;
                 vr.B=2;
                 vr.reappear_flag=1;
-                vr.wait4reappear_SW = 0 - vr.dt;
+                vr.wait4reappear_SW = 0;
+                vr.r=0;
+                vr.flipping = 0;
+                
                 disp('cccc')
             else
                 vr.track2_occur_or_not = 0;
                 vr.track1_occur_or_not = 1;
                 vr.B=1;
                 vr.reappear_flag=1;
-                vr.wait4reappear_SW = 0 - vr.dt;
+                vr.wait4reappear_SW = 0;
+                vr.r=0;
+                vr.flipping = 0;
+                
                 disp('dddd')
             end
             
@@ -377,7 +435,8 @@ if vr.ITI==0 && vr.abort_flag ==0
         elseif vr.B==2
             vr.A=2;
         end
-        
+        disp('seconds passed q')
+        disp(vr.q)
     end
     
     
@@ -391,10 +450,14 @@ if vr.ITI==0 && vr.abort_flag ==0
             vr.ITI=1.5; % *initialize ITI after abort trial
             vr.rewTrials{vr.B} = [vr.rewTrials{vr.B} 0]; % add zero for unrew trial
             vr.abort_flag = 1;
-            out_data=vr.event_abortTrial_outdata;
+            vr.RewSize = 0;
+            vr.engageLatency = 0;
             vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
+            %abort event signal
+            out_data=vr.event_abortTrial_outdata;
             if vr.daq_flag==1
                 putdata(vr.ao, out_data);
+                disp('line428')
                 start(vr.ao);
                 trigger(vr.ao);
             end
@@ -403,14 +466,16 @@ if vr.ITI==0 && vr.abort_flag ==0
     else
     end
     %% reward earned: switch to ITI
-    if vr.position(2) >= vr.rewLocation
+    if vr.start_flag > 0 && vr.engagingSW >= vr.handling_time{vr.currentB}
         disp('position > rewLocation')
-        vr.endLocation=vr.position(2); % store location of trial completed to save later
         vr.ITI = 0.5;
+        vr.flipping = 1;
+        vr.reappear_flag=0;
     end
 end
 
 if vr.ITI == 0.5
+    disp('ITI=0.5')
     vr.dp=[0 0 0 0];
     %make the track brighter to let the mouse know this is the goal
     vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 0;
@@ -418,13 +483,12 @@ if vr.ITI == 0.5
     vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID}+60;
     vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID+2}) = vr.track_zOrig{vr.currTrack_ID+2};
     vr.ITI=1;
-    vr.rewEarned = vr.A;
-    vr.rewTrials{vr.B}=[vr.rewTrials{vr.B} 1]; % add 1 for successful rew trials
+    A_currentA = [vr.A vr.currentA];
+    display(A_currentA)
+    vr.rewEarned = vr.currentA;
+    vr.RewSize = vr.rewEarned;
+    vr.rewTrials{vr.currentB}=[vr.rewTrials{vr.currentB} 1]; % add 1 for successful rew trials
     vr.trialTimer_On=0; % turn off trial time
-    
-    vr.position(2)=vr.position(2);
-    disp('bright')
-    disp(vr.dp)
 end
 %% *** NEW TRIAL START: Leave startLocation
 if vr.atStartLocation==1 && vr.position(2) > vr.startLocation+2
@@ -441,19 +505,18 @@ if vr.ITI > 0
     vr.dp=[0 0 0 0];
     %% initialize ITI
     if vr.ITI==1 % initialize after rewarded trial
-        
+        disp('ITI=1')
         vr.ITI_SW = 0 - vr.dt; % initialize SW to -vr.dt because adding vr.dt to SW later this same iteration
         vr.ITI=2; % run next block after 'delay2disappear' time has elapsed
     elseif vr.ITI==1.5 % initialize after aborted trial
-        
+        disp('ITI=1.5')
         vr.ITI_SW = 0 - vr.dt; % initialize SW to -vr.dt because adding vr.dt to SW later this same iteration
         vr.ITI=2.5;
     end
     
     %% track disappears following delay after reward(ITI=2) or immediately after aborted trial(ITI=2.5)
     if (vr.ITI==2 && vr.ITI_SW >= vr.delay2disappear) || vr.ITI==2.5
-        
-        disp('track disappear')
+        disp('ITI=2 or 2.5')
         vr.ITI=3;
         % make track(s) disappear
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
@@ -465,23 +528,25 @@ if vr.ITI > 0
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{3}) = vr.track_zOrig{3}+60;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
         %%%%%%%
-        vr.p=1;
-        
-        
+        vr.searchtime_SW = 0;
+        vr.p=0;
+        vr.plotAI=1; % plot analog input from previous trial
     end
     
     vr.ITI_SW = vr.ITI_SW + vr.dt;
     %% 3: waiting before eligible to start new trial
-    if vr.ITI==3
-        vr.plotAI=1; % plot analog input from previous trial
+    if vr.ITI==3 && vr.reappear_flag==0
         
-        if vr.wait4stop==0 % begin next ITI if do not need to wait for stop, otherwise initialize speed queue
-        else
+        vr.searchtime_SW = vr.searchtime_SW + vr.dt;
+        if vr.wait4stop > 0 % begin next ITI if do not need to wait for stop, otherwise initialize speed queue
+        
             %reset speed queue to detect mouse stop
             vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
             vr.queue_indx_stop = 1;
             %disp('stop-speed queue initialized');
-            vr.wait4stop_SW = 0 - vr.dt; % initialize SW below zero because will add vr.dt back same iteration below
+            %vr.wait4stop_SW = 0 - vr.dt; % initialize SW below zero
+            %because will add vr.dt back same iteration below??????
+            vr.wait4stop_SW = 0;
         end
         
         if vr.ITI_SW > vr.p
@@ -524,10 +589,10 @@ if vr.ITI > 0
                 
             else
                 %track does not appear in this sec, keep flipping the coin
-                disp('seconds passed')
-                disp(vr.p)
+                
             end
-            
+            disp('seconds passed p')
+            disp(vr.p)
             
         end
         %%%%%%%
@@ -541,24 +606,26 @@ if vr.ITI > 0
     
     %% 4: waiting for mouse to stop if required to start new trial
     if vr.ITI==4
-        vr.wait4stop_SW = vr.wait4stop_SW + vr.dt; % add elapsed time to stopwatch
-        vr.spd_circ_queue_stop( vr.queue_indx_stop) = vr.dp_cache(:,2); % add current speed to queue
-        vr.queue_indx_stop = vr.queue_indx_stop + 1; % move to next spot in queue
-        
-        if vr.queue_indx_stop > vr.queue_len_stop % start over beginning of queue if at the end
-            vr.queue_indx_stop = 1;
-        end
-        
-        % MOUSE STOPPED
-        if nanmax(vr.spd_circ_queue_stop(~isnan(vr.spd_circ_queue_stop))) < vr.STOP_CRIT
-            disp('mouse stopped')
-            vr.okNewTrial=1;
-            vr.wait4stop_times = [vr.wait4stop_times vr.wait4stop_SW];
-            median_wait4stop = median(vr.wait4stop_times); display(median_wait4stop)
+        if vr.ITI_SW >= vr.wait4reappear_CRIT || vr.wait4reappear_SW >= vr.wait4reappear_CRIT
+            vr.wait4stop_SW = vr.wait4stop_SW + vr.dt; % add elapsed time to stopwatch
+            vr.spd_circ_queue_stop( vr.queue_indx_stop) = vr.dp_cache(:,2); % add current speed to queue
+            vr.queue_indx_stop = vr.queue_indx_stop + 1; % move to next spot in queue
+            
+            if vr.queue_indx_stop > vr.queue_len_stop % start over beginning of queue if at the end
+                vr.queue_indx_stop = 1;
+            end
+            
+            % MOUSE STOPPED
+            if nanmax(vr.spd_circ_queue_stop(~isnan(vr.spd_circ_queue_stop))) < vr.STOP_CRIT
+                disp('mouse stopped')
+                vr.okNewTrial=1;
+                vr.wait4stop_times = [vr.wait4stop_times vr.wait4stop_SW];
+                median_wait4stop = median(vr.wait4stop_times); display(median_wait4stop)
+            end
         end
     end
     if vr.reappear_flag==1 && vr.abort_flag == 1
-        disp('track disappear')
+        vr.reappear_flag = 0;
         % make track(s) disappear
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{2}) = 0;
@@ -568,11 +635,62 @@ if vr.ITI > 0
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{2}) = vr.track_zOrig{2}+60;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{3}) = vr.track_zOrig{3}+60;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
-        
         vr.wait4reappear_SW = vr.wait4reappear_SW + vr.dt;% add elapsed time to stopwatch
-        disp('reappearing')
-        if vr.wait4reappear_SW < vr.wait4reappear_SW
-            vr.ITI=4;
+        if vr.wait4reappear_SW > vr.r && vr.r < 2.5
+            %flip coin
+            n=rand(1);
+            if n < vr.freq_high_value
+                vr.track1_occur_or_not=1;
+            else
+                vr.track1_occur_or_not=0;
+            end
+            m=rand(1);
+            if m < vr.freq_low_value
+                vr.track2_occur_or_not=1;
+            else
+                vr.track2_occur_or_not=0;
+            end
+            if vr.track1_occur_or_not ==1 && vr.track2_occur_or_not == 0
+                %track1 appears
+                vr.B=1;
+                vr.ITI=4;
+            elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
+                %track2 appears
+                vr.B=2;
+                vr.ITI=4;
+            elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
+                %flip another coin
+                l=rand(1);
+                if l < vr.freq_low_value/(vr.freq_high_value + vr.freq_low_value)
+                    vr.track2_occur_or_not = 1;
+                    vr.track1_occur_or_not = 0;
+                    vr.B=2;
+                    vr.ITI=4;
+                else
+                    vr.track2_occur_or_not = 0;
+                    vr.track1_occur_or_not = 1;
+                    vr.B=1;
+                    vr.ITI=4;
+                end
+                
+            else
+                vr.r=vr.r+1;
+                %track does not appear in this sec, keep flipping the coin
+                disp('seconds passed r')
+                disp(vr.r)
+                
+            end
+            if vr.wait4reappear_SW > 2
+                vr.ITI=4;
+            end
+            
+        end
+        %%%%%%%
+        
+        if vr.B==1
+            vr.A=4;
+        elseif vr.B==2
+            vr.A=2;
         end
     end
     %%
@@ -586,8 +704,11 @@ if vr.ITI > 0
                 prevRew=0;
             end
         end
-        % concatenate data from previous data to vr.trialsData
-        vr.trialsData = [vr.trialsData; vr.trialNum vr.CBA prevRew vr.rewLocation vr.trialTimer_SW];
+        % concatenate data from previous data to vr.preyData
+        
+        preyData_newLine = [vr.trialNum vr.CBA vr.RewSize vr.engageLatency vr.wait4stop_SW vr.searchtime_SW];
+        display(preyData_newLine)
+        vr.preyData  = [vr.preyData ; vr.trialNum vr.CBA vr.RewSize vr.engageLatency vr.wait4stop_SW vr.searchtime_SW];
         
         vr.event_newTrial=1;
         vr.okNewTrial=0;
@@ -629,13 +750,19 @@ if vr.ITI > 0
         
         vr.startTrial_SW = 0;
         vr.startTrial_latency = 1;
-        
+        vr.waiting4start = 1;
+        vr.flipping = 1;
+
+        disp('w=1,reappearflag=0')
         vr.trialTimer_On=1;
         vr.trialTimer_SW=0; % reset trial timer
         vr.reappear_flag=0;
         
+        
         %reset start speed queue to detect mouse start
         vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
+        vr.currentA=vr.A;
+        vr.currentB=vr.B;
     end
 end
 
@@ -651,23 +778,25 @@ if vr.rewEarned > 0
             SmRewEarned = vr.totalWater; display(SmRewEarned);
             if ~vr.debugMode
                 disp('outdata onSm');
-                disp(vr.rewEarned)
-                out_data = vr.onSm;
+                out_data = vr.onSm_outdata;
                 if vr.daq_flag == 1
                     putdata(vr.ao, out_data);
+                    disp('line739')
                     start(vr.ao);
                     trigger(vr.ao);
                 end
+                
             end
             
         case 4
             vr.totalWater = vr.totalWater + vr.onLg_h2o;
             LgRewEarned = vr.totalWater; display(LgRewEarned);
             if ~vr.debugMode
-                disp('outdata onMd');
-                out_data = vr.onLg;
+                disp('outdata onLg');
+                out_data = vr.onLg_outdata;
                 if vr.daq_flag == 1
                     putdata(vr.ao, out_data);
+                    disp('line754')
                     start(vr.ao);
                     trigger(vr.ao);
                 end
@@ -689,7 +818,7 @@ if isnan(x) ~= 1
         case vr.dispHistory % 'e'
             wait4stop_times = vr.wait4stop_times; display(wait4stop_times);
             
-            tData = round(vr.trialsData);
+            tData = round(vr.preyData);
             display(tData)
             
             rews_trials_water = [sum(vr.rewTrials{1})+sum(vr.rewTrials{2}) tData(end,1) vr.totalWater];
@@ -739,6 +868,7 @@ if vr.event_newTrial > 0 % sent AO signal for new trial signaling trial type
     out_data = vr.event_newTrial_outdata{vr.B}{vr.A};
     if vr.daq_flag == 1
         putdata(vr.ao, out_data);
+        disp('line827')
         start(vr.ao);
         trigger(vr.ao);
     end
@@ -789,7 +919,7 @@ start_last_end = ['start:' vr.startTime ', lastRew:' vr.lastRewEarned ', end:' e
 display(start_last_end);
 summary.mID = mID; summary.start_last_end = start_last_end;
 
-tData = round(vr.trialsData);
+tData = round(vr.preyData);
 
 rews_trials_water = [sum(vr.rewTrials{1})+sum(vr.rewTrials{2}) tData(end,1) vr.totalWater];
 summary.rews_trials_water = rews_trials_water; display(rews_trials_water)
@@ -804,7 +934,7 @@ save([vr.pathname '\' vr.filenameTaskVars '.mat'],'taskVars','-append');
 stats = summary;
 save([vr.pathname '\' vr.filenameStats '.mat'],'stats','-append');
 
-trials = vr.trialsData;
+trials = vr.preyData;
 save([vr.pathname '\' vr.filenameTrials '.mat'],'trials','-append');
 
 if ~isempty(answer)
