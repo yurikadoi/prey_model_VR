@@ -19,7 +19,7 @@ code.termination = @terminationCodeFun;
 %% --- INITIALIZATION code: executes before the ViRMEn engine starts.
 function vr = initializationCodeFun(vr)
 
-rng('shuffle'); % shuffles random numvisualber generator at start of task
+rng('shuffle'); % shuffles random number generator at start of task
 
 %% retrieves values from ViRMEn GUI
 vr.mouseID = eval(vr.exper.variables.mouseID);
@@ -33,7 +33,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 vr.currTrack_ID=1;
@@ -45,7 +45,7 @@ vr.trialTimer_On=0;
 %flipping coin
 vr.ITI=3; % set to 1 to start ITI and 2 while remaining in ITI, 0 is ITI off
 vr.searchtime_SW = 0;
-vr.p=0;
+vr.flippin_count_duringITI=0;
 vr.reappear_flag=0;
 vr.ITI_SW=0; % stopwatch for ITI
 vr.ITI_duration=1; % duration for ITI (value re-drawn each trial)
@@ -161,9 +161,9 @@ else
     vr.handling_time{1}=2;
     vr.handling_time{2}=4;
 end
-vr.p=0;
-vr.q=0;
-vr.r=0;
+vr.flippin_count_duringITI=0;
+vr.flippin_count_duringLatency=0;
+vr.flippin_count_duringWaiting2sec=0;
 vr.plotAI=0; % plots analog input
 vr.wait4reappear_CRIT = 2;
 vr.engageLatency = 0;
@@ -241,7 +241,7 @@ switch vr.mouseID
         vr.wait4reappear_CRIT=2;
         
     case 3
-        disp('mouse 3');
+        disp('mouse #3: Chewbacca');
         vr.progRatio=1; % set > 0 if using progressive ratio for rews
         vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
         
@@ -411,9 +411,9 @@ if vr.ITI==0 && vr.abort_flag ==0
             vr.flipping = 0;
             if vr.daq_flag==1
                 putdata(vr.ao, out_data);
-                disp('line333')
+                
                 start(vr.ao);
-                disp('line336')
+                
                 trigger(vr.ao);
             end
         end
@@ -425,7 +425,7 @@ if vr.ITI==0 && vr.abort_flag ==0
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%keep flipping the coin during the start latency
-    if vr.startTrial_SW >= vr.q && vr.flipping > 0
+    if vr.startTrial_SW >= vr.flippin_count_duringLatency && vr.flipping > 0 && vr.flippin_count_duringLatency < (vr.start_latency_CRIT + 0.5)
         %flip coin
         n=rand(1);
         if n < vr.freq_high_value
@@ -439,13 +439,13 @@ if vr.ITI==0 && vr.abort_flag ==0
         else
             vr.track2_occur_or_not=0;
         end
-        vr.q = vr.q + 1;
+        vr.flippin_count_duringLatency = vr.flippin_count_duringLatency + 1;
         if vr.track1_occur_or_not ==1 && vr.track2_occur_or_not == 0
             %track1 appears
             vr.B=1;
             vr.reappear_flag=1;
             vr.wait4reappear_SW = 0;
-            vr.r=0;
+            vr.flippin_count_duringWaiting2sec=0;
             vr.flipping = 0;
             disp('aaaa')
         elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
@@ -453,7 +453,7 @@ if vr.ITI==0 && vr.abort_flag ==0
             vr.B=2;
             vr.reappear_flag=1;
             vr.wait4reappear_SW = 0;
-            vr.r=0;
+            vr.flippin_count_duringWaiting2sec=0;
             vr.flipping = 0;
             
             disp('bbbb')
@@ -466,7 +466,7 @@ if vr.ITI==0 && vr.abort_flag ==0
                 vr.B=2;
                 vr.reappear_flag=1;
                 vr.wait4reappear_SW = 0;
-                vr.r=0;
+                vr.flippin_count_duringWaiting2sec=0;
                 vr.flipping = 0;
                 
                 disp('cccc')
@@ -476,7 +476,7 @@ if vr.ITI==0 && vr.abort_flag ==0
                 vr.B=1;
                 vr.reappear_flag=1;
                 vr.wait4reappear_SW = 0;
-                vr.r=0;
+                vr.flippin_count_duringWaiting2sec=0;
                 vr.flipping = 0;
                 
                 disp('dddd')
@@ -491,8 +491,8 @@ if vr.ITI==0 && vr.abort_flag ==0
         elseif vr.B==2
             vr.A=2;
         end
-        disp('seconds passed q')
-        disp(vr.q)
+        disp('seconds passed flippin_count_duringLatency')
+        disp(vr.flippin_count_duringLatency)
     end
     
     
@@ -513,7 +513,7 @@ if vr.ITI==0 && vr.abort_flag ==0
             out_data=vr.event_abortTrial_outdata;
             if vr.daq_flag==1
                 putdata(vr.ao, out_data);
-                disp('line428')
+                
                 start(vr.ao);
                 trigger(vr.ao);
             end
@@ -585,7 +585,7 @@ if vr.ITI > 0
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
         %%%%%%%
         vr.searchtime_SW = 0;
-        vr.p=0;
+        vr.flippin_count_duringITI=0;
         vr.plotAI=1; % plot analog input from previous trial
     end
     
@@ -603,9 +603,11 @@ if vr.ITI > 0
             %vr.wait4stop_SW = 0 - vr.dt; % initialize SW below zero
             %because will add vr.dt back same iteration below??????
             vr.wait4stop_SW = 0;
+        else
+            vr.wait4stop_SW = 0;
         end
         
-        if vr.ITI_SW > vr.p
+        if vr.ITI_SW > vr.flippin_count_duringITI
             %flip coin
             n=rand(1);
             if n < vr.freq_high_value
@@ -619,7 +621,7 @@ if vr.ITI > 0
             else
                 vr.track2_occur_or_not=0;
             end
-            vr.p = vr.p + 1;
+            vr.flippin_count_duringITI = vr.flippin_count_duringITI + 1;
             if vr.track1_occur_or_not ==1 && vr.track2_occur_or_not == 0
                 %track1 appears
                 vr.B=1;
@@ -647,8 +649,8 @@ if vr.ITI > 0
                 %track does not appear in this sec, keep flipping the coin
                 
             end
-            disp('seconds passed p')
-            disp(vr.p)
+            disp('seconds passed flippin_count_duringITI')
+            disp(vr.flippin_count_duringITI)
             
         end
         %%%%%%%
@@ -692,7 +694,7 @@ if vr.ITI > 0
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{3}) = vr.track_zOrig{3}+60;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
         vr.wait4reappear_SW = vr.wait4reappear_SW + vr.dt;% add elapsed time to stopwatch
-        if vr.wait4reappear_SW > vr.r && vr.r < 2.5
+        if vr.wait4reappear_SW > vr.flippin_count_duringWaiting2sec && vr.flippin_count_duringWaiting2sec < 2.5
             %flip coin
             n=rand(1);
             if n < vr.freq_high_value
@@ -730,10 +732,10 @@ if vr.ITI > 0
                 end
                 
             else
-                vr.r=vr.r+1;
+                vr.flippin_count_duringWaiting2sec=vr.flippin_count_duringWaiting2sec+1;
                 %track does not appear in this sec, keep flipping the coin
-                disp('seconds passed r')
-                disp(vr.r)
+                disp('seconds passed flippin_count_duringWaiting2sec')
+                disp(vr.flippin_count_duringWaiting2sec)
                 
             end
             if vr.wait4reappear_SW > 2
@@ -771,7 +773,7 @@ if vr.ITI > 0
         vr.ITI=0;
         vr.abort_flag=0;
         vr.start_flag=0;
-        vr.q = 1;
+        vr.flippin_count_duringLatency = 1;
         
         okNewTrial_time_tNum_tType = [now vr.trialNum vr.CBA]; display(okNewTrial_time_tNum_tType)
         vr.position(2) = vr.startLocation;
@@ -827,7 +829,7 @@ if vr.rewEarned > 0
     currRew = vr.rewEarned;
     vr.rewEarned = 0; %reset
     vr.lastRewEarned = datestr(rem(now,1));
-    
+    vr.plot_SW =0;
     switch currRew
         case 2
             vr.totalWater = vr.totalWater + vr.onSm_h2o;
@@ -837,7 +839,7 @@ if vr.rewEarned > 0
                 out_data = vr.onSm_outdata;
                 if vr.daq_flag == 1
                     putdata(vr.ao, out_data);
-                    disp('line739')
+                    
                     start(vr.ao);
                     trigger(vr.ao);
                 end
@@ -852,7 +854,7 @@ if vr.rewEarned > 0
                 out_data = vr.onLg_outdata;
                 if vr.daq_flag == 1
                     putdata(vr.ao, out_data);
-                    disp('line754')
+                    
                     start(vr.ao);
                     trigger(vr.ao);
                 end
@@ -924,14 +926,13 @@ if vr.event_newTrial > 0 % sent AO signal for new trial signaling trial type
     out_data = vr.event_newTrial_outdata{vr.B}{vr.A};
     if vr.daq_flag == 1
         putdata(vr.ao, out_data);
-        disp('line827')
         start(vr.ao);
         trigger(vr.ao);
     end
 end
 if vr.daq_flag==1
-    
-    if vr.plotAI>0 % plot relevant data from analog input from previous trial
+    vr.plot_SW = vr.plot_SW + vr.dt;
+    if vr.plotAI>0 && vr.plot_SW > 2% plot relevant data from analog input from previous trial
         vr.plotAI=0;
         data = peekdata(vr.ai, min([vr.ai.SamplesAvailable*1.02 vr.SR * 20])); % 1000 * 8
         flushdata(vr.ai, 'all');
@@ -961,6 +962,8 @@ while iTrialType<=2 && ~isempty(vr.rewTrials{iTrialType})
     %display(startLatency)
     iTrialType=iTrialType+1;
 end
+
+
 if vr.daq_flag == 1
     if ~vr.debugMode
         fclose all;
