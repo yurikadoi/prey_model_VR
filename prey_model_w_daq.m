@@ -76,7 +76,8 @@ vr.waiting4start =0; %whether or not waiting for the mouse to start running
 vr.flippin_duringITI=0; %coin-flippin count during ITI
 vr.flippin_duringSL=0; %coin-flippin count during start latency
 vr.flippin_duringReappearWait=0; %coin-flippin count during waiting for permission to reappear
-
+vr.start_queue_indx=1;
+vr.queue_indx_stop = 1; % indx to cycle through the queue
 vr.plotAI=0; % plots analog input
 
 if vr.debugMode % set to 'true' in ViRMEn GUI when debugging on the rig to set all means (ITI, distance, etc) to low values for quicker debugging
@@ -159,16 +160,16 @@ if vr.debugYurika == 0
     vr.lambda_1C = 1/15;
     vr.lambda_2 = 1/30;
 else
-    vr.handling_time{1}=2;
-    vr.handling_time{2}=4;
+    vr.handling_time{1}=5;
+    vr.handling_time{2}=10;
 end
 
 if vr.debugYurika == 0
     vr.freq_high_value=vr.lambda_1B;
     vr.freq_low_value=vr.lambda_2;
 else
-    vr.freq_high_value=1/4;
-    vr.freq_low_value=1/4;
+    vr.freq_high_value=1/10;
+    vr.freq_low_value=1/10;
 end
 
 
