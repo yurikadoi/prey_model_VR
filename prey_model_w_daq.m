@@ -2,7 +2,7 @@
 
 function code = prey_model_w_daq
 
-% xForaging   Code for the ViRMEn experiment xForaging.
+% prey model   Code for the ViRMEn experiment xForaging.
 %   code = xForaging   Returns handles to the functions that ViRMEn
 %   executes during engine initialization, runtime and termination.
 %store LeaveTimes already packaged based on trialtype/blocktype
@@ -53,7 +53,7 @@ vr.reappear_SW_turnedON = 0;
 vr.engagingSW = 0;
 vr.wait4stop_SW=0; % keep track of how long it takes mouse to stop after required ITI duration has passed
 vr.wait4stop_times = [];
-
+vr.plot_SW =0;
 
 %initialize flags
 vr.reappear_flag=0;
@@ -837,7 +837,7 @@ if vr.rewEarned > 0
     currRew = vr.rewEarned;
     vr.rewEarned = 0; %reset
     vr.lastRewEarned = datestr(rem(now,1));
-    
+    vr.plot_SW =0;
     switch currRew
         case 2
             vr.totalWater = vr.totalWater + vr.onSm_h2o;
@@ -940,8 +940,8 @@ if vr.event_newTrial > 0 % sent AO signal for new trial signaling trial type
     end
 end
 if vr.daq_flag==1
-    
-    if vr.plotAI>0 % plot relevant data from analog input from previous trial
+    vr.plot_SW = vr.plot_SW + vr.dt;
+    if vr.plotAI>0 && vr.plot_SW > 2% plot relevant data from analog input from previous trial
         vr.plotAI=0;
         data = peekdata(vr.ai, min([vr.ai.SamplesAvailable*1.02 vr.SR * 20])); % 1000 * 8
         flushdata(vr.ai, 'all');
