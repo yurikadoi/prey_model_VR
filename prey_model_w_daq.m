@@ -1,5 +1,3 @@
-% MB edits 9-27-18 2pm rig
-
 %coin heads: prey will presented, coin tails: prey will not presented
 
 function code = prey_model_w_daq
@@ -45,7 +43,7 @@ vr.trialTimer_On=0;
 %flipping coin
 vr.ITI=3; % set to 1 to start ITI and 2 while remaining in ITI, 0 is ITI off
 vr.searchtime_SW = 0;
-vr.p=0;
+vr.flippin_duringITI=0;
 vr.reappear_flag=0;
 vr.ITI_SW=0; % stopwatch for ITI
 vr.ITI_duration=1; % duration for ITI (value re-drawn each trial)
@@ -161,9 +159,9 @@ else
     vr.handling_time{1}=2;
     vr.handling_time{2}=4;
 end
-vr.p=0;
-vr.q=0;
-vr.r=0;
+vr.flippin_duringITI=0;
+vr.flippin_duringSL=0;
+vr.flippin_duringReappearWait=0;
 vr.plotAI=0; % plots analog input
 vr.wait4reappear_CRIT = 2;
 vr.engageLatency = 0;
@@ -417,7 +415,7 @@ if vr.ITI==0 && vr.abort_flag ==0
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%keep flipping the coin during the start latency
-    if vr.startTrial_SW >= vr.q && vr.flipping > 0
+    if vr.startTrial_SW >= vr.flippin_duringSL && vr.flipping > 0
         %flip coin
         n=rand(1);
         if n < vr.freq_high_value
@@ -431,13 +429,13 @@ if vr.ITI==0 && vr.abort_flag ==0
         else
             vr.track2_occur_or_not=0;
         end
-        vr.q = vr.q + 1;
+        vr.flippin_duringSL = vr.flippin_duringSL + 1;
         if vr.track1_occur_or_not ==1 && vr.track2_occur_or_not == 0
             %track1 appears
             vr.B=1;
             vr.reappear_flag=1;
             vr.wait4reappear_SW = 0;
-            vr.r=0;
+            vr.flippin_duringReappearWait=0;
             vr.flipping = 0;
             disp('aaaa')
         elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
@@ -445,7 +443,7 @@ if vr.ITI==0 && vr.abort_flag ==0
             vr.B=2;
             vr.reappear_flag=1;
             vr.wait4reappear_SW = 0;
-            vr.r=0;
+            vr.flippin_duringReappearWait=0;
             vr.flipping = 0;
             
             disp('bbbb')
@@ -458,7 +456,7 @@ if vr.ITI==0 && vr.abort_flag ==0
                 vr.B=2;
                 vr.reappear_flag=1;
                 vr.wait4reappear_SW = 0;
-                vr.r=0;
+                vr.flippin_duringReappearWait=0;
                 vr.flipping = 0;
                 
                 disp('cccc')
@@ -468,7 +466,7 @@ if vr.ITI==0 && vr.abort_flag ==0
                 vr.B=1;
                 vr.reappear_flag=1;
                 vr.wait4reappear_SW = 0;
-                vr.r=0;
+                vr.flippin_duringReappearWait=0;
                 vr.flipping = 0;
                 
                 disp('dddd')
@@ -484,7 +482,7 @@ if vr.ITI==0 && vr.abort_flag ==0
             vr.A=2;
         end
         disp('seconds passed q')
-        disp(vr.q)
+        disp(vr.flippin_duringSL)
     end
     
     
@@ -577,7 +575,7 @@ if vr.ITI > 0
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
         %%%%%%%
         vr.searchtime_SW = 0;
-        vr.p=0;
+        vr.flippin_duringITI=0;
         vr.plotAI=1; % plot analog input from previous trial
     end
     
@@ -597,7 +595,7 @@ if vr.ITI > 0
             vr.wait4stop_SW = 0;
         end
         
-        if vr.ITI_SW > vr.p
+        if vr.ITI_SW > vr.flippin_duringITI
             %flip coin
             n=rand(1);
             if n < vr.freq_high_value
@@ -611,36 +609,19 @@ if vr.ITI > 0
             else
                 vr.track2_occur_or_not=0;
             end
-            vr.p = vr.p + 1;
+            vr.flippin_duringITI = vr.flippin_duringITI + 1;
             if vr.track1_occur_or_not ==1 && vr.track2_occur_or_not == 0
                 %track1 appears
                 vr.B=1;
                 vr.ITI=4;
                 vr.sound_flag = 1;
-                %                 if ~vr.debugMode
-                %                     if vr.daq_flag == 1
-                %                         out_data = vr.sound_outdata;
-                %                         putdata(vr.ao, out_data);
-                %                         start(vr.ao);
-                %                         trigger(vr.ao);
-                %                         disp('sound output3')
-                %                     end
-                %                 end
+
             elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
                 %track2 appears
                 vr.B=2;
                 vr.ITI=4;
                 vr.sound_flag = 1;
-                
-                %                 if ~vr.debugMode
-                %                     if vr.daq_flag == 1
-                %                         out_data = vr.sound_outdata;
-                %                         putdata(vr.ao, out_data);
-                %                         start(vr.ao);
-                %                         trigger(vr.ao);
-                %                         disp('sound output3')
-                %                     end
-                %                 end
+
             elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
                 %flip another coin
                 l=rand(1);
@@ -650,16 +631,7 @@ if vr.ITI > 0
                     vr.B=2;
                     vr.ITI=4;
                     vr.sound_flag = 1;
-                    
-                    %                     if ~vr.debugMode
-                    %                         if vr.daq_flag == 1
-                    %                             out_data = vr.sound_outdata;
-                    %                             putdata(vr.ao, out_data);
-                    %                             start(vr.ao);
-                    %                             trigger(vr.ao);
-                    %                             disp('sound output3')
-                    %                         end
-                    %end
+
                 else
                     vr.track2_occur_or_not = 0;
                     vr.track1_occur_or_not = 1;
@@ -667,15 +639,7 @@ if vr.ITI > 0
                     vr.ITI=4;
                     vr.sound_flag = 1;
                     
-                    %                     if ~vr.debugMode
-                    %                         if vr.daq_flag == 1
-                    %                             out_data = vr.sound_outdata;
-                    %                             putdata(vr.ao, out_data);
-                    %                             start(vr.ao);
-                    %                             trigger(vr.ao);
-                    %                             disp('sound output3')
-                    %                         end
-                    %                     end
+
                 end
                 if vr.ITI==4
                     vr.sound_flag = 1;
@@ -688,7 +652,7 @@ if vr.ITI > 0
                 
             end
             disp('seconds passed p')
-            disp(vr.p)
+            disp(vr.flippin_duringITI)
             
         end
         %%%%%%%
@@ -702,8 +666,7 @@ if vr.ITI > 0
     
     %% 4: waiting for mouse to stop if required to start new trial
     if vr.ITI==4
-        %display(vr.ITI_SW)
-        %display(vr.wait4reappear_SW)
+
         if vr.ITI_SW >= vr.wait4reappear_CRIT || (vr.wait4reappear_SW >= vr.wait4reappear_CRIT && vr.reappear_SW_turnedON == 1)
 
             if vr.sound_flag == 1
@@ -752,7 +715,7 @@ if vr.ITI > 0
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{3}) = vr.track_zOrig{3}+60;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
         vr.wait4reappear_SW = vr.wait4reappear_SW + vr.dt;% add elapsed time to stopwatch
-        if vr.wait4reappear_SW > vr.r && vr.r < 2.5
+        if vr.wait4reappear_SW > vr.flippin_duringReappearWait && vr.flippin_duringReappearWait < 2.5
             %flip coin
             n=rand(1);
             if n < vr.freq_high_value
@@ -766,7 +729,7 @@ if vr.ITI > 0
             else
                 vr.track2_occur_or_not=0;
             end
-            vr.r=vr.r+1;
+            vr.flippin_duringReappearWait=vr.flippin_duringReappearWait+1;
             if vr.track1_occur_or_not ==1 && vr.track2_occur_or_not == 0
                 %track1 appears
                 vr.B=1;
@@ -805,7 +768,7 @@ if vr.ITI > 0
                 
                 %track does not appear in this sec, keep flipping the coin
                 disp('seconds passed r')
-                disp(vr.r)
+                disp(vr.flippin_duringReappearWait)
                 
             end
             if vr.wait4reappear_SW > 2
@@ -847,7 +810,7 @@ if vr.ITI > 0
         vr.ITI=0;
         vr.abort_flag=0;
         vr.start_flag=0;
-        vr.q = 1;
+        vr.flippin_duringSL = 1;
         
         okNewTrial_time_tNum_tType = [now vr.trialNum vr.CBA]; display(okNewTrial_time_tNum_tType)
         vr.position(2) = vr.startLocation;
