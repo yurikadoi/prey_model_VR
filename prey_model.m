@@ -58,7 +58,7 @@ if ~vr.debugMode
     
     %%VirMenInitDAQ;
     
-    vr.pathname = 'C:\ViRMEn\ViRMeN_data\test\';
+    vr.pathname = 'C:\ViRMEn\ViRMeN_data\prey_model';
     cd(vr.pathname);
     vr.filename = datestr(now,'yyyymmdd_HHMM');
     vr.filenameExper = ['Exper',datestr(now,'yyyymmdd_HHMM')];
@@ -273,6 +273,7 @@ if vr.trialTimer_On>0
 end
 
 if vr.ITI==0 && vr.abort_flag ==0
+    vr.dp(2) = 0;
     vr.startTrial_SW = vr.startTrial_SW + vr.dt;
     vr.spd_circ_queue_start(vr.start_queue_indx) = vr.dp_cache(:,2); % add current speed to queue
     vr.start_queue_indx = vr.start_queue_indx + 1; % move to next spot in queue
@@ -304,9 +305,6 @@ if vr.ITI==0 && vr.abort_flag ==0
         vr.ITI = 0.5;
     end
     if vr.ITI == 0.5
-        disp('aaaa')
-        disp(vr.currTrack_ID)
-        disp(vr.trackIndx{1})
         %make the track brighter to let the mouse know this is the goal
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 0;
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID+2}) = 1;
@@ -711,6 +709,6 @@ if ~vr.debugMode %save all files and move to appropriate folders
         daqPath = 'C:\VirmenDataTmp';
         daqDir = dir('C:\VirmenDataTmp');
         
-        movefile([daqPath '\' daqDir(end).name],[vr.pathname '\' answer{1} '\' sessionDate '\DaqData',datestr(now,'mmdd'),'.daq']);
+        %movefile([daqPath '\' daqDir(end).name],[vr.pathname '\' answer{1} '\' sessionDate '\DaqData',datestr(now,'mmdd'),'.daq']);
     end
 end
