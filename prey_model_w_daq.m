@@ -43,20 +43,20 @@ vr.startLocation=0;
 vr.ITI=3; % set to 1 to start ITI and 2 while remaining in ITI, 0 is ITI off
 
 %initialzie stopwatches
-vr.trialTimer_SW=0;
+vr.trialTimer_SW=0;%stopwatch that starts at the trial onset
 vr.trialTimer_On=0;
-vr.searchtime_SW = 0;
+vr.searchtime_SW = 0;%stopwatch for searchtime
 vr.ITI_SW=0; % stopwatch for ITI
 vr.startTrial_SW = 0; % keep track of how long mouse takes to start trial after track appears
-vr.wait4reappear_SW = 0;
+vr.wait4reappear_SW = 0; % to make some delay between the reward delivery or abortion, and the next patch appearing
 vr.reappear_SW_turnedON = 0;
-vr.engagingSW = 0;
+vr.engagingSW = 0;% keep track of how long the mouse has been engagin in a track
 vr.wait4stop_SW=0; % keep track of how long it takes mouse to stop after required ITI duration has passed
-vr.wait4stop_times = [];
-vr.plot_SW =0;
+vr.wait4stop_times = []; %array to store wait4stop
+vr.plot_SW =0;% to make some delay between when the reward is delivered and whent the figure is plotted
 
 %initialize flags
-vr.reappear_flag=0;
+vr.reappear_flag=0;  
 vr.abort_flag = 0;
 vr.start_flag = 0;
 vr.occur_time=0;
@@ -68,13 +68,14 @@ vr.flipping = 0;
 vr.delay2disappear=.5; % delay until track disappears following reward
 vr.rewEarned = 0; % set to value for rew size when reward is earned
 vr.atStartLocation = 1; % 0 = onTrack, 1 = at start location
-vr.engageLatency = 0;
+vr.engageLatency = 0;% how long it takes the mouse to engage in a prey (only when it engages)
+vr.engageLatency_times = [];
 vr.wait4stop=0; % set to positive value to require mouseStop to initiate new trial
 vr.okNewTrial=0; % start new trial after ITI or after ITI + mouseStopped
-vr.waiting4start =0;
-vr.flippin_duringITI=0;
-vr.flippin_duringSL=0;
-vr.flippin_duringReappearWait=0;
+vr.waiting4start =0; %whether or not waiting for the mouse to start running
+vr.flippin_duringITI=0; %coin-flippin count during ITI
+vr.flippin_duringSL=0; %coin-flippin count during start latency
+vr.flippin_duringReappearWait=0; %coin-flippin count during waiting for permission to reappear
 
 vr.plotAI=0; % plots analog input
 
@@ -127,11 +128,16 @@ for k = 1:length(vr.indx_track)
 end
 %%
 vr.totalWater = 0; % keep track of water earned
-vr.preyData=[]; % trialNum, trialType, rewEarned, rewLocation, endLocation, trialTime
-vr.trialNum = 1;
-vr.RewSize = 0;
-vr.lastRewEarned = [];
-
+vr.preyData=[]; %storing vr.trialNum vr.CBA vr.RewSize vr.engageLatency vr.wait4stop_SW vr.searchtime_SW
+vr.trialNum = 1;% keep track of trial number
+vr.RewSize = 0; %store reward size
+vr.lastRewEarned = [];% keep track of the time when the last reward is earned
+%% initialize A,B,C
+%%C:experiment type(3 for Yurika's prey model), B:track type (1 or 2),
+%%A:reward size (2 or 4)
+vr.CBA = 0;
+vr.A = 0; vr.B = 0; vr.C = 0;
+%%
 vr.trackLength = eval(vr.exper.variables.floor1height);
 
 %% KEYPRESS COMMANDS
@@ -142,6 +148,8 @@ vr.dispWhatever = 82; %'r'
 vr.toggleDisp = 84; %'t'; *toggles dispSet value 0,1,2
 vr.dispSet = 0; %value for low(0), med(1), or high(2) amount of printing for debugging
 
+%when debugging use shorter handling time and more frequent prey encounter
+%(just for the sake of convernience)
 if vr.debugYurika == 0
     vr.handling_time{1}=15;
     vr.handling_time{2}=30;
@@ -193,9 +201,9 @@ switch vr.mouseID
         
         vr.progRatioStart = 1;% 9:is the maximum and goal of the training
 
-        vr.y_disposition = 0.15;
+        vr.y_disposition = 0.15;% determines the speed of movement of track
         
-        vr.wait4reappear_CRIT=2;
+        vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
     case 2
         disp('mouse #2: skywalker');
         vr.progRatio=1; % set > 0 if using progressive ratio for rews
@@ -212,9 +220,9 @@ switch vr.mouseID
         
         vr.progRatioStart = 1;% 9:is the maximum and goal of the training
 
-        vr.y_disposition = 0.15;
+        vr.y_disposition = 0.15;% determines the speed of movement of track
         
-        vr.wait4reappear_CRIT=2;
+        vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         
     case 3
         disp('mouse 3');
@@ -232,9 +240,9 @@ switch vr.mouseID
         
         vr.progRatioStart = 1;% 9:is the maximum and goal of the training
 
-        vr.y_disposition = 0.15;
+        vr.y_disposition = 0.15;% determines the speed of movement of track
         
-        vr.wait4reappear_CRIT=2;
+        vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         
     otherwise
         disp('error: MOUSE ID NOT RECOGNIZED');
@@ -242,9 +250,7 @@ end
 %%
 vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
 vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
-%%
-vr.CBA = 0;
-vr.A = 0; vr.B = 0; vr.C = 0;
+
 %%
 vr.onLg_h2o = 4; vr.onSm_h2o = 2;
 vr.LgRew = 25; vr.SmRew = 12.5;  %8-1-18 calibrated
@@ -275,15 +281,16 @@ end
 
 %%
 mouseID = vr.mouseID; display(mouseID);
-%%
+%%set progratop start and the distances
 vr.progRatio = vr.progRatioStart;
 vr.short_distance = vr.progRatio_short_Dist(vr.progRatio);
 vr.long_distance = vr.progRatio_long_Dist(vr.progRatio);
 
 %% move correct track into place, other away/disappear, initiate variables for must run, etc
+%flip a coin to decide which track to appear as the first trial
 vr.C = 3;
 m=rand(1);
-if m > 0.5
+if m > vr.freq_low_value/(vr.freq_high_value + vr.freq_low_value)
     vr.B=1;
     vr.A=4;
     vr.rewLocation = vr.short_distance;
@@ -334,28 +341,25 @@ end
 function vr = runtimeCodeFun(vr)
 
 vr.dp_cache = vr.dp; % cache current velocity so value measured even if changed to zero
-%constant speed from Mike's code
-%vr.dp(2) = 0;
 
+%start the trial timer
 if vr.trialTimer_On>0
     vr.trialTimer_SW = vr.trialTimer_SW + vr.dt;
 end
 
 if vr.ITI==0 && vr.abort_flag ==0
-    
     vr.dp=[0 0 0 0];
     vr.startTrial_SW = vr.startTrial_SW + vr.dt;
     vr.spd_circ_queue_start(vr.start_queue_indx) = vr.dp_cache(:,2); % add current speed to queue
     vr.start_queue_indx = vr.start_queue_indx + 1; % move to next spot in queue
-    
-    %disp(vr.waiting4start)
+
     if vr.start4engage == 1 && vr.waiting4start ==1
-        %disp((vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))))
         if vr.start_flag==0 && nanmean(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))) > vr.START_CRIT
             vr.waiting4start =0;
             disp('w=0')
             vr.start_flag=1;
             vr.engageLatency  = vr.trialTimer_SW;
+            vr.engageLatency_times = [vr.engageLatency_times vr.engageLatency];
             vr.engagingSW = 0;
             %vr.position(2) = vr.position(2) + vr.setSpeed*vr.dt;
             
@@ -452,7 +456,7 @@ if vr.ITI==0 && vr.abort_flag ==0
         elseif vr.B==2
             vr.A=2;
         end
-        disp('seconds passed q')
+        disp('seconds passed flippin_duringSL')
         disp(vr.flippin_duringSL)
     end
     
@@ -622,7 +626,7 @@ if vr.ITI > 0
                 %track does not appear in this sec, keep flipping the coin
                 
             end
-            disp('seconds passed p')
+            disp('seconds passed flippin_duringITI')
             disp(vr.flippin_duringITI)
             
         end
@@ -738,7 +742,7 @@ if vr.ITI > 0
             else
                 
                 %track does not appear in this sec, keep flipping the coin
-                disp('seconds passed r')
+                disp('seconds passed flippin_duringReappearWait')
                 disp(vr.flippin_duringReappearWait)
                 
             end
@@ -934,14 +938,13 @@ if vr.event_newTrial > 0 % sent AO signal for new trial signaling trial type
     out_data = vr.event_newTrial_outdata{vr.B}{vr.A};
     if vr.daq_flag == 1
         putdata(vr.ao, out_data);
-        disp('line827')
         start(vr.ao);
         trigger(vr.ao);
     end
 end
 if vr.daq_flag==1
     vr.plot_SW = vr.plot_SW + vr.dt;
-    if vr.plotAI>0 && vr.plot_SW > 2% plot relevant data from analog input from previous trial
+    if vr.plotAI>0 && vr.plot_SW > 2% plot relevant data from analog input from previous trial 2 sec after reward
         vr.plotAI=0;
         data = peekdata(vr.ai, min([vr.ai.SamplesAvailable*1.02 vr.SR * 20])); % 1000 * 8
         flushdata(vr.ai, 'all');
@@ -952,11 +955,12 @@ end
 %% --- TERMINATION code: executes after the ViRMEn engine stops.
 function vr = terminationCodeFun(vr)
 
+%display and store 
 if vr.wait4stop>0
     median_wait4stop = median(vr.wait4stop_times);
+    median_engageLatency=median(vr.engageLatency_times);
     summary.median_wait4stop=median_wait4stop; display(median_wait4stop)
-    
-    %summary.median_startTrial=median_startTrial; display(median_startTrial)
+    summary.median_engageLatency=median_engageLatency; display(median_engageLatency)
 end
 
 iTrialType=1;
