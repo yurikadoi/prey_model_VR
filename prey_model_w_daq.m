@@ -67,7 +67,7 @@ if ~vr.debugMode
     disp('daqreset')
     if vr.daq_flag == 1
         daqreset %reset DAQ in case it's still in use by a previous Matlab program
-        VirMenInitDAQ_noLaser;
+        VirMenInitDAQ;
     end
     vr.pathname = 'C:\ViRMEn\ViRMeN_data\prey_model';
     cd(vr.pathname);
@@ -169,12 +169,12 @@ vr.wait4reappear_CRIT = 2;
 vr.engageLatency = 0;
 
 %% event signals to send to DAQ board
-vr.event_engageTrial_outdata=[zeros(10,1) 0.5*ones(10,1)];
-vr.event_abortTrial_outdata=[zeros(10,1) -2*ones(10,1)];% upon abort trial, signal negative voltage to DAQ - change value to 1 to trigger
+vr.event_engageTrial_outdata=[zeros(10,1) 0.5*ones(10,1) zeros(10,1) zeros(10,1)];
+vr.event_abortTrial_outdata=[zeros(10,1) -2*ones(10,1) zeros(10,1) zeros(10,1)];% upon abort trial, signal negative voltage to DAQ - change value to 1 to trigger
 vr.event_newTrial=0; % when track appears, signal trial type w A.B mV for later readout of trialtype from DAQ file
 for iA = 1:6
     for iB = 1:9
-        vr.event_newTrial_outdata{iB}{iA} = [zeros(10,1) ((iA+.1*iB)/2)*ones(10,1)];
+        vr.event_newTrial_outdata{iB}{iA} = [zeros(10,1) ((iA+.1*iB)/2)*ones(10,1) zeros(10,1) zeros(10,1)];
     end
 end
 
@@ -287,12 +287,12 @@ vr.iSndOff = floor(0.08 * vr.SR);
 vr.vSnd(vr.iSndOff:end) = 0;
 
 %water sizes (valve openings)
-vr.onSm_outdata =  [5 * ones(floor(vr.SmRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onSm_outdata = [vr.onSm_outdata (4/5)*vr.onSm_outdata];
-vr.onLg_outdata =  [5 * ones(floor(vr.LgRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onLg_outdata = [vr.onLg_outdata (4/5)*vr.onLg_outdata];
+vr.onSm_outdata =  [5 * ones(floor(vr.SmRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onSm_outdata = [vr.onSm_outdata (4/5)*vr.onSm_outdata zeros(length(vr.onSm_outdata),1) zeros(length(vr.onSm_outdata),1)];
+vr.onLg_outdata =  [5 * ones(floor(vr.LgRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onLg_outdata = [vr.onLg_outdata (4/5)*vr.onLg_outdata zeros(length(vr.onLg_outdata),1) zeros(length(vr.onLg_outdata),1)];
 
 %sound - ???
-vr.sound = [5 * ones(floor(25/1000*vr.SR),1 ); zeros(1, 1)]; vr.sound = [vr.sound zeros(length(vr.sound),1)];
-
+vr.sound_length = 20;
+vr.sound_outdata = [zeros(vr.sound_length,1) zeros(vr.sound_length,1) zeros(vr.sound_length,1) 5*ones(vr.sound_length,1)];
 % if ~vr.debugMode
 %     % start generating pulse by signaling to Arduino board
 %     putvalue(vr.dio.Line(2), 1);
@@ -372,16 +372,6 @@ end
 
 if vr.ITI==0 && vr.abort_flag ==0
     
-    %output to speaker to make the cue sound
-    %     if ~vr.debugMode
-    %         if vr.daq_flag == 1
-    %             out_data = vr.sound;
-    %             putdata(vr.ao, out_data);
-    %             start(vr.ao);
-    %             trigger(vr.ao);
-    %         end
-    %     end
-    %vr.velocity = [0 10 0 0]
     vr.dp=[0 0 0 0];
     vr.startTrial_SW = vr.startTrial_SW + vr.dt;
     vr.spd_circ_queue_start(vr.start_queue_indx) = vr.dp_cache(:,2); % add current speed to queue
@@ -624,10 +614,28 @@ if vr.ITI > 0
                 %track1 appears
                 vr.B=1;
                 vr.ITI=4;
+                if ~vr.debugMode
+                    if vr.daq_flag == 1
+                        out_data = vr.sound_outdata;
+                        putdata(vr.ao, out_data);
+                        start(vr.ao);
+                        trigger(vr.ao);
+                        disp('sound output3')
+                    end
+                end
             elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
                 %track2 appears
                 vr.B=2;
                 vr.ITI=4;
+                if ~vr.debugMode
+                    if vr.daq_flag == 1
+                        out_data = vr.sound_outdata;
+                        putdata(vr.ao, out_data);
+                        start(vr.ao);
+                        trigger(vr.ao);
+                        disp('sound output3')
+                    end
+                end
             elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
                 %flip another coin
                 l=rand(1);
@@ -636,12 +644,43 @@ if vr.ITI > 0
                     vr.track1_occur_or_not = 0;
                     vr.B=2;
                     vr.ITI=4;
+                    if ~vr.debugMode
+                        if vr.daq_flag == 1
+                            out_data = vr.sound_outdata;
+                            putdata(vr.ao, out_data);
+                            start(vr.ao);
+                            trigger(vr.ao);
+                            disp('sound output3')
+                        end
+                    end
                 else
                     vr.track2_occur_or_not = 0;
                     vr.track1_occur_or_not = 1;
                     vr.B=1;
                     vr.ITI=4;
+                    if ~vr.debugMode
+                        if vr.daq_flag == 1
+                            out_data = vr.sound_outdata;
+                            putdata(vr.ao, out_data);
+                            start(vr.ao);
+                            trigger(vr.ao);
+                            disp('sound output3')
+                        end
+                    end
                 end
+                %                 if vr.ITI==4
+                %
+%                     %output to speaker to make the cue sound
+%                     if ~vr.debugMode
+%                         if vr.daq_flag == 1
+%                             out_data = vr.sound_outdata;
+%                             putdata(vr.ao, out_data);
+%                             start(vr.ao);
+%                             trigger(vr.ao);
+%                             disp('sound output3')
+%                         end
+%                     end
+%                 end
                 
             else
                 %track does not appear in this sec, keep flipping the coin
@@ -670,6 +709,9 @@ if vr.ITI > 0
             if vr.queue_indx_stop > vr.queue_len_stop % start over beginning of queue if at the end
                 vr.queue_indx_stop = 1;
             end
+            
+            
+            
             
             % MOUSE STOPPED
             if nanmax(vr.spd_circ_queue_stop(~isnan(vr.spd_circ_queue_stop))) < vr.STOP_CRIT
@@ -706,14 +748,33 @@ if vr.ITI > 0
             else
                 vr.track2_occur_or_not=0;
             end
+            vr.r=vr.r+1;
             if vr.track1_occur_or_not ==1 && vr.track2_occur_or_not == 0
                 %track1 appears
                 vr.B=1;
                 vr.ITI=4;
+                if ~vr.debugMode
+                    if vr.daq_flag == 1
+                        out_data = vr.sound_outdata;
+                        putdata(vr.ao, out_data);
+                        start(vr.ao);
+                        trigger(vr.ao);
+                        disp('sound output3')
+                    end
+                end
             elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
                 %track2 appears
                 vr.B=2;
                 vr.ITI=4;
+                if ~vr.debugMode
+                    if vr.daq_flag == 1
+                        out_data = vr.sound_outdata;
+                        putdata(vr.ao, out_data);
+                        start(vr.ao);
+                        trigger(vr.ao);
+                        disp('sound output3')
+                    end
+                end
             elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
                 %flip another coin
                 l=rand(1);
@@ -722,15 +783,44 @@ if vr.ITI > 0
                     vr.track1_occur_or_not = 0;
                     vr.B=2;
                     vr.ITI=4;
+                    if ~vr.debugMode
+                        if vr.daq_flag == 1
+                            out_data = vr.sound_outdata;
+                            putdata(vr.ao, out_data);
+                            start(vr.ao);
+                            trigger(vr.ao);
+                            disp('sound output3')
+                        end
+                    end
                 else
                     vr.track2_occur_or_not = 0;
                     vr.track1_occur_or_not = 1;
                     vr.B=1;
                     vr.ITI=4;
+                    if ~vr.debugMode
+                        if vr.daq_flag == 1
+                            out_data = vr.sound_outdata;
+                            putdata(vr.ao, out_data);
+                            start(vr.ao);
+                            trigger(vr.ao);
+                            disp('sound output3')
+                        end
+                    end
                 end
-                
+                %                 if vr.ITI==4
+                %                     %output to speaker to make the cue sound
+                %                     if ~vr.debugMode
+                %                         if vr.daq_flag == 1
+%                             out_data = vr.sound_outdata;
+%                             putdata(vr.ao, out_data);
+%                             start(vr.ao);
+%                             trigger(vr.ao);
+%                             disp('sound output1')
+%                         end
+%                     end
+%                 end
             else
-                vr.r=vr.r+1;
+                
                 %track does not appear in this sec, keep flipping the coin
                 disp('seconds passed r')
                 disp(vr.r)
@@ -738,7 +828,19 @@ if vr.ITI > 0
             end
             if vr.wait4reappear_SW > 2
                 vr.ITI=4;
+                
+                %output to speaker to make the cue sound
+                if ~vr.debugMode
+                    if vr.daq_flag == 1
+                        out_data = vr.sound_outdata;
+                        putdata(vr.ao, out_data);
+                        start(vr.ao);
+                        trigger(vr.ao);
+                        disp('sound output2')
+                    end
+                end
             end
+            
             
         end
         %%%%%%%
