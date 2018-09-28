@@ -34,29 +34,50 @@ vr.startT = now;
 vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
-vr.currTrack_ID=1;
+%vr.currTrack_ID=1;
 
-vr.trialTimer_SW=0;
-vr.trialTimer_On=0;
+
 
 %in the beginning of session, start vr.ITI=3 so that it starts with
 %flipping coin
 vr.ITI=3; % set to 1 to start ITI and 2 while remaining in ITI, 0 is ITI off
-vr.searchtime_SW = 0;
-vr.flippin_duringITI=0;
-vr.reappear_flag=0;
-vr.ITI_SW=0; % stopwatch for ITI
-vr.ITI_duration=1; % duration for ITI (value re-drawn each trial)
-% default ITI parameters (set custom per mouse otherwise) - drawn from a
-% psuedo-normal distribution
 
+%initialzie stopwatches
+vr.trialTimer_SW=0;
+vr.trialTimer_On=0;
+vr.searchtime_SW = 0;
+vr.ITI_SW=0; % stopwatch for ITI
 vr.startTrial_SW = 0; % keep track of how long mouse takes to start trial after track appears
 vr.wait4reappear_SW = 0;
-vr.delay2disappear=.5; % delay until track disappears following reward
-vr.delay2reappear = 2; %delay until the next track appears when the coin is flipped heads
-
+vr.reappear_SW_turnedON = 0;
 vr.engagingSW = 0;
+vr.wait4stop_SW=0; % keep track of how long it takes mouse to stop after required ITI duration has passed
+vr.wait4stop_times = [];
+
+
+%initialize flags
+vr.reappear_flag=0;
+vr.abort_flag = 0;
+vr.start_flag = 0;
+vr.occur_time=0;
+vr.roll_flag = 1;
+vr.sound_flag = 0;
+vr.flipping = 0;
+
+%initialize values
+vr.delay2disappear=.5; % delay until track disappears following reward
+vr.rewEarned = 0; % set to value for rew size when reward is earned
+vr.atStartLocation = 1; % 0 = onTrack, 1 = at start location
+vr.engageLatency = 0;
+vr.wait4stop=0; % set to positive value to require mouseStop to initiate new trial
+vr.okNewTrial=0; % start new trial after ITI or after ITI + mouseStopped
 vr.waiting4start =0;
+vr.flippin_duringITI=0;
+vr.flippin_duringSL=0;
+vr.flippin_duringReappearWait=0;
+
+vr.plotAI=0; % plots analog input
+
 if vr.debugMode % set to 'true' in ViRMEn GUI when debugging on the rig to set all means (ITI, distance, etc) to low values for quicker debugging
     disp('DEBUG MODE RUNNING')
 end
@@ -104,7 +125,7 @@ for k = 1:length(vr.indx_track)
     vr.track_yOrig{k} = vr.worlds{vr.currentWorld}.surface.vertices(2, vr.trackIndx{k});
     vr.track_zOrig{k} = vr.worlds{vr.currentWorld}.surface.vertices(3, vr.trackIndx{k});
 end
-
+%%
 vr.totalWater = 0; % keep track of water earned
 vr.preyData=[]; % trialNum, trialType, rewEarned, rewLocation, endLocation, trialTime
 vr.trialNum = 1;
@@ -117,35 +138,9 @@ vr.trackLength = eval(vr.exper.variables.floor1height);
 vr.dispStartTime = 81; %'q'
 vr.dispWater = 87; %'w'
 vr.dispHistory = 69; %'e'
-%65; %'a'
 vr.dispWhatever = 82; %'r'
 vr.toggleDisp = 84; %'t'; *toggles dispSet value 0,1,2
 vr.dispSet = 0; %value for low(0), med(1), or high(2) amount of printing for debugging
-%';' = 59
-% 'u'= 85
-
-% number of cell = vr.B (which determines track # for trial type)
-vr.rewTrials{1}=[]; % concatenate a 1 for rew trial, 0 for unrew
-vr.rewTrials{2}=[];
-
-
-vr.rewEarned = 0; % set to value for rew size when reward is earned
-vr.atStartLocation = 1; % 0 = onTrack, 1 = at start location
-
-vr.wait4stop=0; % set to positive value to require mouseStop to initiate new trial
-vr.okNewTrial=0; % start new trial after ITI or after ITI + mouseStopped
-
-vr.wait4stop_SW=0; % keep track of how long it takes mouse to stop after required ITI duration has passed
-vr.wait4stop_times = [];
-
-%defaults
-vr.STOP_CRIT = 0.025; %default
-vr.queue_len_stop = 30; % default to ~0.5 seconds, make ~1 second later after mouse has learned to stop
-vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1); % make cue array to cycle through
-vr.queue_indx_stop = 1; % indx to cycle through the queue
-vr.queue_len_start=60;
-vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
-vr.start_queue_indx=1;
 
 if vr.debugYurika == 0
     vr.handling_time{1}=15;
@@ -159,27 +154,28 @@ else
     vr.handling_time{1}=2;
     vr.handling_time{2}=4;
 end
-vr.flippin_duringITI=0;
-vr.flippin_duringSL=0;
-vr.flippin_duringReappearWait=0;
-vr.plotAI=0; % plots analog input
-vr.wait4reappear_CRIT = 2;
-vr.engageLatency = 0;
 
-%% event signals to send to DAQ board
-vr.event_engageTrial_outdata=[zeros(10,1) 0.5*ones(10,1) zeros(10,1) zeros(10,1)];
-vr.event_abortTrial_outdata=[zeros(10,1) -2*ones(10,1) zeros(10,1) zeros(10,1)];% upon abort trial, signal negative voltage to DAQ - change value to 1 to trigger
-vr.event_newTrial=0; % when track appears, signal trial type w A.B mV for later readout of trialtype from DAQ file
-for iA = 1:6
-    for iB = 1:9
-        vr.event_newTrial_outdata{iB}{iA} = [zeros(10,1) ((iA+.1*iB)/2)*ones(10,1) zeros(10,1) zeros(10,1)];
-    end
+if vr.debugYurika == 0
+    vr.freq_high_value=vr.lambda_1B;
+    vr.freq_low_value=vr.lambda_2;
+else
+    vr.freq_high_value=1/4;
+    vr.freq_low_value=1/4;
 end
 
+
+%% number of cell = vr.B (which determines track # for trial type)
+vr.rewTrials{1}=[]; % concatenate a 1 for rew trial, 0 for unrew
+vr.rewTrials{2}=[];
+%%
+%ProgRatio
 vr.progRatio=0; % set > 0 if using progressive ratio for rews
 vr.progRatioStart = 0;
 vr.progRatio_short_Dist = [20 30 40 50 60 70 80 90 100];
 vr.progRatio_long_Dist = 2*vr.progRatio_short_Dist;
+
+%%
+%variables that is dependent on individual mouse
 switch vr.mouseID
     case 1
         disp('mouse #1: obiwan');
@@ -191,21 +187,12 @@ switch vr.mouseID
         vr.START_CRIT = 0.1;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
         vr.queue_len_start=30;
-        vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
-        vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
         
         vr.start4engage = 1;%0: if do not need to start running to engage, 1: if they need to start running to engage
         vr.start_latency_CRIT = 5;%within how many seconds should they start running to engage with the trial
         
         vr.progRatioStart = 1;% 9:is the maximum and goal of the training
-        if vr.debugYurika == 0
-            vr.freq_high_value=vr.lambda_1B;
-            vr.freq_low_value=vr.lambda_2;
-        else
-            vr.freq_high_value=1/4;
-            vr.freq_low_value=1/4;
-        end
-        %vr.setSpeed = 10;
+
         vr.y_disposition = 0.15;
         
         vr.wait4reappear_CRIT=2;
@@ -219,21 +206,12 @@ switch vr.mouseID
         vr.START_CRIT = 0.1;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
         vr.queue_len_start=30;
-        vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
-        vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
         
         vr.start4engage = 1;%0: if do not need to start running to engage, 1: if they need to start running to engage
         vr.start_latency_CRIT = 5;%within how many seconds should they start running to engage with the trial
         
         vr.progRatioStart = 1;% 9:is the maximum and goal of the training
-        if vr.debugYurika == 0
-            vr.freq_high_value=vr.lambda_1B;
-            vr.freq_low_value=vr.lambda_2;
-        else
-            vr.freq_high_value=1/4;
-            vr.freq_low_value=1/4;
-        end
-        %vr.setSpeed = 10;
+
         vr.y_disposition = 0.15;
         
         vr.wait4reappear_CRIT=2;
@@ -248,21 +226,12 @@ switch vr.mouseID
         vr.START_CRIT = 0.045;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
         vr.queue_len_start=20;
-        vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
-        vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
         
         vr.start4engage = 1;%0: if do not need to start running to engage, 1: if they need to start running to engage
         vr.start_latency_CRIT = 10;%within how many seconds should they start running to engage with the trial
         
         vr.progRatioStart = 1;% 9:is the maximum and goal of the training
-        if vr.debugYurika == 0
-            vr.freq_high_value=2*vr.lambda_1B;
-            vr.freq_low_value=vr.lambda_2;
-        else
-            vr.freq_high_value=1/4;
-            vr.freq_low_value=1/4;
-        end
-        %vr.setSpeed = 10;
+
         vr.y_disposition = 0.15;
         
         vr.wait4reappear_CRIT=2;
@@ -270,40 +239,49 @@ switch vr.mouseID
     otherwise
         disp('error: MOUSE ID NOT RECOGNIZED');
 end
-
-
+%%
+vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);
+vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
+%%
 vr.CBA = 0;
 vr.A = 0; vr.B = 0; vr.C = 0;
-
+%%
 vr.onLg_h2o = 4; vr.onSm_h2o = 2;
 vr.LgRew = 25; vr.SmRew = 12.5;  %8-1-18 calibrated
-
+%%
 %set rew valve open times
 vr.SR = 1000;
 vr.vSnd = 5 * ones(20*vr.SR,1); vr.vSnd(1:2:end) = vr.vSnd(1:2:end) * -1;
 vr.iSndOff = floor(0.08 * vr.SR);
 vr.vSnd(vr.iSndOff:end) = 0;
 
-%water sizes (valve openings)
+%water sizes (valve openings), create reward valve outdata for DAQ board
 vr.onSm_outdata =  [5 * ones(floor(vr.SmRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onSm_outdata = [vr.onSm_outdata (4/5)*vr.onSm_outdata zeros(length(vr.onSm_outdata),1) zeros(length(vr.onSm_outdata),1)];
 vr.onLg_outdata =  [5 * ones(floor(vr.LgRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.onLg_outdata = [vr.onLg_outdata (4/5)*vr.onLg_outdata zeros(length(vr.onLg_outdata),1) zeros(length(vr.onLg_outdata),1)];
 
-%sound - ???
+%create sound outdata for DAQ board
 vr.sound_length = 50;
 vr.sound_outdata = [zeros(vr.sound_length,1) zeros(vr.sound_length,1) zeros(vr.sound_length,1) 5*ones(vr.sound_length,1)];
-% if ~vr.debugMode
-%     % start generating pulse by signaling to Arduino board
-%     putvalue(vr.dio.Line(2), 1);
-% end
 
+%% event signals to send to DAQ board
+vr.event_engageTrial_outdata=[zeros(10,1) 0.5*ones(10,1) zeros(10,1) zeros(10,1)];
+vr.event_abortTrial_outdata=[zeros(10,1) -2*ones(10,1) zeros(10,1) zeros(10,1)];% upon abort trial, signal negative voltage to DAQ - change value to 1 to trigger
+vr.event_newTrial=0; % when track appears, signal trial type w A.B mV for later readout of trialtype from DAQ file
+for iA = 1:6
+    for iB = 1:9
+        vr.event_newTrial_outdata{iB}{iA} = [zeros(10,1) ((iA+.1*iB)/2)*ones(10,1) zeros(10,1) zeros(10,1)];
+    end
+end
+
+%%
 mouseID = vr.mouseID; display(mouseID);
+%%
 vr.progRatio = vr.progRatioStart;
 vr.short_distance = vr.progRatio_short_Dist(vr.progRatio);
 vr.long_distance = vr.progRatio_long_Dist(vr.progRatio);
 
 %% move correct track into place, other away/disappear, initiate variables for must run, etc
 vr.C = 3;
-
 m=rand(1);
 if m > 0.5
     vr.B=1;
@@ -333,13 +311,6 @@ vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{otherTrack}) = vr.tra
 vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{curr_brightTrack}) = vr.track_zOrig{curr_brightTrack}+60;
 vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{other_brightTrack}) = vr.track_zOrig{other_brightTrack}+60;
 
-vr.abort_flag = 0;
-vr.start_flag = 0;
-vr.occur_time=0;
-vr.roll_flag = 1;
-vr.sound_flag = 0;
-vr.flipping = 0;
-vr.reappear_SW_turnedON = 0;
 
 %% DELIVER 2uL WATER TO START SESSION - you are delivering large here, not small ***
 if vr.daq_flag == 1
