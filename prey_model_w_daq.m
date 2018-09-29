@@ -178,6 +178,7 @@ vr.rewTrials{1}=[]; % concatenate a 1 for rew trial, 0 for unrew
 vr.rewTrials{2}=[];
 %%
 %ProgRatio
+vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
 vr.progRatio=0; % set > 0 if using progressive ratio for rews
 vr.progRatioStart = 0;
 vr.progRatio_short_Dist = [20 30 40 50 60 70 80 90 100];
@@ -188,9 +189,8 @@ vr.progRatio_long_Dist = 2*vr.progRatio_short_Dist;
 switch vr.mouseID
     case 1
         disp('mouse #1: obiwan');
-        vr.progRatio=1; % set > 0 if using progressive ratio for rews
         vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
-        
+        vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
         vr.STOP_CRIT = 0.04;
         vr.START_CRIT = 0.1;
@@ -207,9 +207,9 @@ switch vr.mouseID
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
     case 2
         disp('mouse #2: skywalker');
-        vr.progRatio=1; % set > 0 if using progressive ratio for rews
         vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
-        
+        vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
+
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
         vr.STOP_CRIT = 0.04;
         vr.START_CRIT = 0.1;
@@ -227,9 +227,9 @@ switch vr.mouseID
         
     case 3
         disp('mouse 3');
-        vr.progRatio=1; % set > 0 if using progressive ratio for rews
         vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
-        
+        vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
+
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
         vr.STOP_CRIT = 0.06;
         vr.START_CRIT = 0.045;
@@ -629,13 +629,15 @@ if vr.ITI > 0
             vr.A=2;
         end
     end
-    %%%%%%%%%
-    %commented above so far
+
     %% 4: waiting for mouse to stop if required to start new trial
     if vr.ITI==4
 
         if vr.ITI_SW >= vr.wait4reappear_CRIT || (vr.wait4reappear_SW >= vr.wait4reappear_CRIT && vr.reappear_SW_turnedON == 1)
-
+            %deliver sound to let the mouse know that the search time is
+            %over and they are eligible to start a new trial as soon as
+            %they stop running
+            %deliver sound only once when the search time is voer
             if vr.sound_flag == 1
                 vr.sound_flag = 0;
                 if ~vr.debugMode
@@ -645,7 +647,7 @@ if vr.ITI > 0
                         start(vr.ao);
                         trigger(vr.ao);
                         disp('sound output3')
-                        vr.spd_circ_queue_stop= 2*ones(vr.queue_len_stop, 1);
+                        vr.spd_circ_queue_stop= 2*ones(vr.queue_len_stop, 1);%initialize the speed queue so that there is at least .5 sec delay between the sound and the new track appearing
                     end
                 end
             end
@@ -661,14 +663,18 @@ if vr.ITI > 0
             
             
             % MOUSE STOPPED
+            % if the speed is under the stop criteria
             if nanmax(vr.spd_circ_queue_stop(~isnan(vr.spd_circ_queue_stop))) < vr.STOP_CRIT
                 disp('mouse stopped')
-                vr.okNewTrial=1;
-                vr.wait4stop_times = [vr.wait4stop_times vr.wait4stop_SW];
+                vr.okNewTrial=1;%make the new trial flag to postivie
+                vr.wait4stop_times = [vr.wait4stop_times vr.wait4stop_SW];%store the time that the mouse took to stop
                 median_wait4stop = median(vr.wait4stop_times); display(median_wait4stop)
             end
         end
     end
+    %there is a 2 sec delay between the abortion (during which the coin was
+    %flipped positive) and the next track appearing (I named it as
+    %reappearing). 
     if vr.reappear_flag==1 && vr.abort_flag == 1
         vr.reappear_flag = 0;
         vr.reappear_SW_turnedON = 1;
@@ -682,6 +688,7 @@ if vr.ITI > 0
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{3}) = vr.track_zOrig{3}+60;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
         vr.wait4reappear_SW = vr.wait4reappear_SW + vr.dt;% add elapsed time to stopwatch
+        %flip coin for 2 sec
         if vr.wait4reappear_SW > vr.flippin_duringReappearWait && vr.flippin_duringReappearWait < 2.5
             %flip coin
             n=rand(1);
@@ -741,6 +748,7 @@ if vr.ITI > 0
             if vr.wait4reappear_SW > 2
                 vr.ITI=4;
                 vr.sound_flag = 1;
+                disp('line 751')
 
 
             end
@@ -756,49 +764,45 @@ if vr.ITI > 0
         end
     end
     %%
+    %if it is okay to start a new trial
     if vr.okNewTrial==1
+        %display the previous trial reward
         if isempty(vr.rewTrials{vr.B})
             prevRew=0;
         else
             if vr.rewTrials{vr.B}(end)>0
-                prevRew=vr.A; testingif_vrA_or_1v0=prevRew; display('testingif_vrA_or_1v0')
+                prevRew=vr.A;
             else
                 prevRew=0;
             end
         end
         % concatenate data from previous data to vr.preyData
-        
         preyData_newLine = [vr.trialNum vr.CBA vr.RewSize vr.engageLatency vr.wait4stop_SW vr.searchtime_SW];
         display(preyData_newLine)
         vr.preyData  = [vr.preyData ; vr.trialNum vr.CBA vr.RewSize vr.engageLatency vr.wait4stop_SW vr.searchtime_SW];
         
-        vr.event_newTrial=1;
-        vr.okNewTrial=0;
-        vr.ITI=0;
-        vr.abort_flag=0;
-        vr.start_flag=0;
-        vr.flippin_duringSL = 1;
-        
+        %dispalay the content of next trial
         okNewTrial_time_tNum_tType = [now vr.trialNum vr.CBA]; display(okNewTrial_time_tNum_tType)
         vr.position(2) = vr.startLocation;
         
-        vr.atStartLocation = 1;
-        
+        %increment trial number
         vr.trialNum = vr.trialNum + 1;
         
+        %dispalay the content of next trial
         vr.CBA = vr.A + vr.B*10 + vr.C*100;
         currentCBA = vr.CBA; display(currentCBA);
         
-        % make tracks appear, move into place
-        vr.progRatio=vr.progRatioStart+floor(vr.trialNum/20);
-        if vr.progRatio > 9
-            vr.progRatio=9;
+        %if changing the distance based on the prog ratio 
+        if vr.progRatio_flag == 1
+            vr.progRatio=vr.progRatioStart+floor(vr.trialNum/20);
+            if vr.progRatio > 9
+                vr.progRatio=9;
+            end
+            vr.short_distance = vr.progRatio_short_Dist(vr.progRatio);
+            vr.long_distance = vr.progRatio_long_Dist(vr.progRatio);
         end
-        vr.short_distance = vr.progRatio_short_Dist(vr.progRatio);
-        vr.long_distance = vr.progRatio_long_Dist(vr.progRatio);
+        % make tracks appear, move into place
         disp('tracks appear')
-        disp('dist prog ratio is')
-        disp(vr.progRatio)
         switch vr.B
             case 1
                 vr.currTrack_ID=1;
@@ -809,13 +813,19 @@ if vr.ITI > 0
         end
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 1;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID};
+        vr.atStartLocation = 1;
         
-        vr.startTrial_SW = 0;
-        vr.startTrial_latency = 1;
-        vr.waiting4start = 1;
-        vr.flipping = 1;
+        vr.event_newTrial=1;
+        vr.okNewTrial=0;
+        vr.ITI=0;
+        vr.abort_flag=0;
+        vr.start_flag=0;
+        vr.flippin_duringSL = 1;
         
-        disp('w=1,reappearflag=0')
+        vr.startTrial_SW = 0;%reset the start trial SW
+        vr.waiting4start = 1;% whether the current state is waiting for the mouse to start running for engagement
+        vr.flipping = 1;%if it is okay to flip or not (1:flip, 0:don't flip)
+        
         vr.trialTimer_On=1;
         vr.trialTimer_SW=0; % reset trial timer
         vr.reappear_flag=0;
@@ -823,8 +833,12 @@ if vr.ITI > 0
         
         %reset start speed queue to detect mouse start
         vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
+        
+        %save the current CBA because CBA may be updated when coin flipped
+        %postive
         vr.currentA=vr.A;
         vr.currentB=vr.B;
+        vr.currentC=vr.C;
     end
 end
 
