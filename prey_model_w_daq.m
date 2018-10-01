@@ -31,7 +31,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 %vr.currTrack_ID=1;
@@ -208,7 +208,7 @@ switch vr.mouseID
         vr.y_disposition = 0.15;% determines the speed of movement of track
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
-        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 3*60; %at what seconds, does the environment change
         
         if vr.debugYurika == 0
@@ -246,7 +246,7 @@ switch vr.mouseID
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         
-        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
         if vr.debugYurika == 0
@@ -284,7 +284,7 @@ switch vr.mouseID
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         
-        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
         if vr.debugYurika == 0
@@ -928,14 +928,14 @@ if vr.ITI > 0
         vr.currentA=vr.A;
         vr.currentB=vr.B;
         vr.currentC=vr.C;
-        
-        if vr.sessionTimer_SW < vr.change_timing
-            vr.freq_high_value = vr.before_change_freq_high_value;
-        else
-            vr.changed_or_not_yet_flag = vr.changed_or_not_yet_flag + 1;
-            vr.freq_high_value = vr.after_change_freq_high_value;
+        if vr.env_change_flag==1
+            if vr.sessionTimer_SW < vr.change_timing
+                vr.freq_high_value = vr.before_change_freq_high_value;
+            else
+                vr.changed_or_not_yet_flag = vr.changed_or_not_yet_flag + 1;
+                vr.freq_high_value = vr.after_change_freq_high_value;
+            end
         end
-        
         if vr.changed_or_not_yet_flag == 1 % when the env changes, store the trial number and the time of the changing timing
             disp('environment change');
             vr.trialNum_change_timing = vr.trialNum;
