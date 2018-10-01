@@ -55,9 +55,11 @@ vr.engagingSW = 0;% keep track of how long the mouse has been engagin in a track
 vr.wait4stop_SW=0; % keep track of how long it takes mouse to stop after required ITI duration has passed
 vr.wait4stop_times = []; %array to store wait4stop
 vr.plot_SW =0;% to make some delay between when the reward is delivered and whent the figure is plotted
-
+vr.searchtime_duringSL = 0;
+vr.searchtime_duringReappearWait=0;
+vr.fluppin_duringITI_SW = 0;
 %initialize flags
-vr.reappear_flag=0;  
+vr.reappear_flag=0;
 vr.abort_flag = 0;
 vr.start_flag = 0;
 vr.occur_time=0;
@@ -165,6 +167,10 @@ if vr.debugYurika == 0
 else
     vr.handling_time{1}=5;
     vr.handling_time{2}=10;
+    vr.lambda_1A = 1/60;
+    vr.lambda_1B = 1/30;
+    vr.lambda_1C = 1/15;
+    vr.lambda_2 = 1/30;
 end
 
 
@@ -203,7 +209,7 @@ switch vr.mouseID
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
-        vr.change_timing = 20*60; %at what seconds, does the environment change
+        vr.change_timing = 3*60; %at what seconds, does the environment change
         
         if vr.debugYurika == 0
             vr.freq_high_value=vr.lambda_1A;
@@ -212,6 +218,8 @@ switch vr.mouseID
         else
             vr.freq_high_value=1/10;
             vr.freq_low_value=1/10;
+            vr.before_change_freq_high_value = 1/10;
+            vr.after_change_freq_high_value = 1/10;
         end
         
         if vr.env_change_flag ==1 %if changing the environment in the middle of a session
@@ -248,6 +256,8 @@ switch vr.mouseID
         else
             vr.freq_high_value=1/10;
             vr.freq_low_value=1/10;
+            vr.before_change_freq_high_value = 1/10;
+            vr.after_change_freq_high_value = 1/10;
         end
         
         if vr.env_change_flag ==1 %if changing the environment in the middle of a session
@@ -284,6 +294,8 @@ switch vr.mouseID
         else
             vr.freq_high_value=1/10;
             vr.freq_low_value=1/10;
+            vr.before_change_freq_high_value = 1/10;
+            vr.after_change_freq_high_value = 1/10;
         end
         
         if vr.env_change_flag ==1 %if changing the environment in the middle of a session
@@ -454,26 +466,26 @@ if vr.ITI==0 && vr.abort_flag ==0
         %flip coin every second
         vr.flippin_duringSL = vr.flippin_duringSL + 1;
         
-
+        
         if vr.track1_occur_or_not ==1 && vr.track2_occur_or_not == 0
             %track1 appears
             vr.B=1;
             vr.reappear_flag=1;%set reappearing flag to one so that if mouse abort this trial, the new track will appear right after 2 sec
-            vr.wait4reappear_SW = 0;%reset wait4reappear SW
             vr.flippin_duringReappearWait=0;%reset reappear waiting time to zero
             vr.flipping = 0;% no more flipping once get positive
+            vr.searchtime_duringSL = vr.startTrial_SW;%how many seconds has passed by the time the coin was flipped positive
             disp('aaaa')
         elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
             %track2 appears
             vr.B=2;
             vr.reappear_flag=1;
-            vr.wait4reappear_SW = 0;
             vr.flippin_duringReappearWait=0;
             vr.flipping = 0;
+            vr.searchtime_duringSL = vr.startTrial_SW;%how many seconds has passed by the time the coin was flipped positive
             
             disp('bbbb')
-        %if both coins flipped positive at the same time, flip another coin
-        %to decide which track to appear next
+            %if both coins flipped positive at the same time, flip another coin
+            %to decide which track to appear next
         elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
             %flip another coin
             l=rand(1);
@@ -482,9 +494,9 @@ if vr.ITI==0 && vr.abort_flag ==0
                 vr.track1_occur_or_not = 0;
                 vr.B=2;
                 vr.reappear_flag=1;
-                vr.wait4reappear_SW = 0;
                 vr.flippin_duringReappearWait=0;
                 vr.flipping = 0;
+                vr.searchtime_duringSL = vr.startTrial_SW;%how many seconds has passed by the time the coin was flipped positive
                 
                 disp('cccc')
             else
@@ -492,9 +504,9 @@ if vr.ITI==0 && vr.abort_flag ==0
                 vr.track1_occur_or_not = 1;
                 vr.B=1;
                 vr.reappear_flag=1;
-                vr.wait4reappear_SW = 0;
                 vr.flippin_duringReappearWait=0;
                 vr.flipping = 0;
+                vr.searchtime_duringSL = vr.startTrial_SW;%how many seconds has passed by the time the coin was flipped positive
                 
                 disp('dddd')
             end
@@ -526,7 +538,11 @@ if vr.ITI==0 && vr.abort_flag ==0
             vr.RewSize = 0;
             vr.engageLatency = 0;
             vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
+            vr.wait4reappear_SW = 0;%reset wait4reappear SW
             vr.flippin_duringReappearWait=0;%reset reappear waiting time count to zero
+            if vr.reappear_flag ==0
+                vr.searchtime_duringSL = vr.startTrial_SW;
+            end
             %abort event signal
             out_data=vr.event_abortTrial_outdata;
             if vr.daq_flag==1
@@ -586,7 +602,9 @@ if vr.ITI > 0
     %% track disappears following delay after reward(ITI=2) or immediately after aborted trial(ITI=2.5)
     if (vr.ITI==2 && vr.ITI_SW >= vr.delay2disappear) || (vr.ITI==2.5 && vr.ITI_SW >= vr.delay2disappear)
         if (vr.ITI==2 && vr.ITI_SW >= vr.delay2disappear)
+            vr.searchtime_SW = 0;%initialize the search time SW
             vr.ITI=3;
+            vr.fluppin_duringITI_SW = 0;
         end
         % make track(s) disappear
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
@@ -601,6 +619,7 @@ if vr.ITI > 0
         %there is a 2 sec delay between the abortion and the next track appearing (I named it as
         %reappearing).
         if vr.abort_flag == 1
+            
             vr.reappear_SW_turnedON = 1;
             % make track(s) disappear
             vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
@@ -620,6 +639,7 @@ if vr.ITI > 0
                 vr.sound_flag = 1;
                 disp('line 751')
                 vr.reappear_flag = 2;
+                
             end
             %if coin was flipped negative during start latency, keep flipping
             %coin for 2 sec
@@ -644,11 +664,13 @@ if vr.ITI > 0
                         %track1 appears
                         vr.B=1;
                         vr.reappear_flag = 1;
+                        vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
                         
                     elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
                         %track2 appears
                         vr.B=2;
                         vr.reappear_flag = 1;
+                        vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
                         
                     elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
                         %flip another coin
@@ -658,12 +680,14 @@ if vr.ITI > 0
                             vr.track1_occur_or_not = 0;
                             vr.B=2;
                             vr.reappear_flag = 1;
+                            vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
                             
                         else
                             vr.track2_occur_or_not = 0;
                             vr.track1_occur_or_not = 1;
                             vr.B=1;
                             vr.reappear_flag = 1;
+                            vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
                             
                         end
                         
@@ -676,7 +700,8 @@ if vr.ITI > 0
                         %time
                         if vr.wait4reappear_SW > 2 && vr.reappear_flag == 0
                             vr.ITI=3;
-                            vr.searchtime_SW = 0;%initialize the search time SW
+                            vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
+                            vr.fluppin_duringITI_SW = 0;
                         end
                     end
                 end
@@ -699,7 +724,13 @@ if vr.ITI > 0
     
     %% 3: waiting before eligible to start new trial
     if vr.ITI==3 && vr.reappear_flag==0
+        if vr.abort_flag ==1
+            vr.searchtime_SW = vr.searchtime_duringSL + vr.searchtime_duringReappearWait;
+            vr.abort_flag =0;
+        end
+        %vr.searchtime=vr.searchtime_duringSL + vr.searchtime_duringReappearWait;
         vr.searchtime_SW = vr.searchtime_SW + vr.dt;% add time passed to the search time SW
+        vr.fluppin_duringITI_SW = vr.fluppin_duringITI_SW + vr.dt;
         if vr.wait4stop > 0 % begin next ITI if do not need to wait for stop, otherwise initialize speed queue
             %reset speed queue to detect mouse stop
             vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);%initialize the speed queue
@@ -707,7 +738,7 @@ if vr.ITI > 0
             vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
         end
         
-        if vr.ITI_SW > vr.flippin_duringITI
+        if vr.fluppin_duringITI_SW > vr.flippin_duringITI
             %flip coin
             n=rand(1);
             if n < vr.freq_high_value
@@ -727,13 +758,13 @@ if vr.ITI > 0
                 vr.B=1;
                 vr.ITI=4;
                 vr.sound_flag = 1;
-
+                
             elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
                 %track2 appears
                 vr.B=2;
                 vr.ITI=4;
                 vr.sound_flag = 1;
-
+                
             elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
                 %flip another coin
                 l=rand(1);
@@ -743,7 +774,7 @@ if vr.ITI > 0
                     vr.B=2;
                     vr.ITI=4;
                     vr.sound_flag = 1;
-
+                    
                 else
                     vr.track2_occur_or_not = 0;
                     vr.track1_occur_or_not = 1;
@@ -752,7 +783,7 @@ if vr.ITI > 0
                     vr.sound_flag = 1;
                 end
                 if vr.ITI==4
-                    vr.sound_flag = 1;                 
+                    vr.sound_flag = 1;
                 end
                 
             else
@@ -760,6 +791,7 @@ if vr.ITI > 0
             end
             disp('seconds passed flippin_duringITI')
             disp(vr.flippin_duringITI)
+            
         end
         %%%%%%%
         
@@ -769,10 +801,15 @@ if vr.ITI > 0
             vr.A=2;
         end
     end
-
+    
     %% 4: waiting for mouse to stop if required to start new trial
     if vr.ITI==4
-
+        if vr.abort_flag ==1
+            display(vr.searchtime_duringSL);
+            display(vr.searchtime_duringReappearWait)
+            vr.searchtime_SW = vr.searchtime_duringSL + vr.searchtime_duringReappearWait;
+            vr.abort_flag =0;
+        end
         if vr.ITI_SW >= vr.wait4reappear_CRIT || (vr.wait4reappear_SW >= vr.wait4reappear_CRIT && vr.reappear_SW_turnedON == 1)
             %deliver sound to let the mouse know that the search time is
             %over and they are eligible to start a new trial as soon as
@@ -812,7 +849,7 @@ if vr.ITI > 0
             end
         end
     end
-
+    
     %%
     %if it is okay to start a new trial
     if vr.okNewTrial==1
@@ -842,7 +879,7 @@ if vr.ITI > 0
         vr.CBA = vr.A + vr.B*10 + vr.C*100;
         currentCBA = vr.CBA; display(currentCBA);
         
-        %if changing the distance based on the prog ratio 
+        %if changing the distance based on the prog ratio
         if vr.progRatio_flag == 1
             vr.progRatio=vr.progRatioStart+floor(vr.trialNum/20);
             if vr.progRatio > 9
@@ -880,6 +917,8 @@ if vr.ITI > 0
         vr.trialTimer_SW=0; % reset trial timer
         vr.reappear_flag=0;
         
+        vr.searchtime_duringSL = 0;
+        vr.searchtime_duringReappearWait=0;;
         
         %reset start speed queue to detect mouse start
         vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
@@ -1022,7 +1061,7 @@ end
 %% --- TERMINATION code: executes after the ViRMEn engine stops.
 function vr = terminationCodeFun(vr)
 
-%display and store 
+%display and store
 if vr.wait4stop>0
     median_wait4stop = median(vr.wait4stop_times);
     median_engageLatency=median(vr.engageLatency_times);
