@@ -31,7 +31,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 %vr.currTrack_ID=1;
@@ -150,9 +150,7 @@ vr.trackLength = eval(vr.exper.variables.floor1height);
 vr.dispStartTime = 81; %'q'
 vr.dispWater = 87; %'w'
 vr.dispHistory = 69; %'e'
-vr.dispWhatever = 82; %'r'
-vr.toggleDisp = 84; %'t'; *toggles dispSet value 0,1,2
-vr.dispSet = 0; %value for low(0), med(1), or high(2) amount of printing for debugging
+vr.dispSeconds = 84; %'t'
 
 %when debugging use shorter handling time and more frequent prey encounter
 %(just for the sake of convernience)
@@ -474,7 +472,7 @@ if vr.ITI==0 && vr.abort_flag ==0
             vr.flippin_duringReappearWait=0;%reset reappear waiting time to zero
             vr.flipping = 0;% no more flipping once get positive
             vr.searchtime_duringSL = vr.startTrial_SW;%how many seconds has passed by the time the coin was flipped positive
-            disp('aaaa')
+            %disp('aaaa')
         elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
             %track2 appears
             vr.B=2;
@@ -482,8 +480,7 @@ if vr.ITI==0 && vr.abort_flag ==0
             vr.flippin_duringReappearWait=0;
             vr.flipping = 0;
             vr.searchtime_duringSL = vr.startTrial_SW;%how many seconds has passed by the time the coin was flipped positive
-            
-            disp('bbbb')
+            %disp('bbbb')
             %if both coins flipped positive at the same time, flip another coin
             %to decide which track to appear next
         elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
@@ -498,7 +495,7 @@ if vr.ITI==0 && vr.abort_flag ==0
                 vr.flipping = 0;
                 vr.searchtime_duringSL = vr.startTrial_SW;%how many seconds has passed by the time the coin was flipped positive
                 
-                disp('cccc')
+                %disp('cccc')
             else
                 vr.track2_occur_or_not = 0;
                 vr.track1_occur_or_not = 1;
@@ -508,7 +505,7 @@ if vr.ITI==0 && vr.abort_flag ==0
                 vr.flipping = 0;
                 vr.searchtime_duringSL = vr.startTrial_SW;%how many seconds has passed by the time the coin was flipped positive
                 
-                disp('dddd')
+                %disp('dddd')
             end
             
         else
@@ -521,8 +518,8 @@ if vr.ITI==0 && vr.abort_flag ==0
         elseif vr.B==2
             vr.A=2;
         end
-        disp('seconds passed flippin_duringSL')
-        disp(vr.flippin_duringSL)
+        %disp('seconds passed flippin_duringSL')
+        %disp(vr.flippin_duringSL)
     end
     
     %% MOUSE DID NOT RUN, ABORT TRIAL
@@ -637,7 +634,7 @@ if vr.ITI > 0
             if vr.reappear_flag == 1 && vr.wait4reappear_SW > 2
                 vr.ITI=4;
                 vr.sound_flag = 1;
-                disp('line 751')
+                %disp('line 751')
                 vr.reappear_flag = 2;
                 
             end
@@ -694,8 +691,9 @@ if vr.ITI > 0
                     else
                         
                         %track does not appear in this sec, keep flipping the coin
-                        disp('seconds passed flippin_duringReappearWait')
-                        disp(vr.flippin_duringReappearWait)
+                        
+                        %disp('seconds passed flippin_duringReappearWait')
+                        %disp(vr.flippin_duringReappearWait)
                         %if 2 sec has passed without positive coin, go to search
                         %time
                         if vr.wait4reappear_SW > 2 && vr.reappear_flag == 0
@@ -789,8 +787,8 @@ if vr.ITI > 0
             else
                 %track does not appear in this sec, keep flipping the coin
             end
-            disp('seconds passed flippin_duringITI')
-            disp(vr.flippin_duringITI)
+            %disp('seconds passed flippin_duringITI')
+            %disp(vr.flippin_duringITI)
             
         end
         %%%%%%%
@@ -985,7 +983,7 @@ end
 x = vr.keyPressed;
 if isnan(x) ~= 1
     switch x
-        case vr.dispWater
+        case vr.dispWater %'w'
             disp('last rew earned: ');
             display(vr.lastRewEarned);
             disp('total water');
@@ -1000,47 +998,23 @@ if isnan(x) ~= 1
             rews_trials_water = [sum(vr.rewTrials{1})+sum(vr.rewTrials{2}) tData(end,1) vr.totalWater];
             display(rews_trials_water)
             
-        case vr.toggleDisp % 't'
-            vr.dispSet = vr.dispSet + 1;
-            if vr.dispSet > 2
-                vr.dispSet = 0;
-            end
-            toggle_dispSet = vr.dispSet; display(toggle_dispSet);
-            
-        case vr.dispStartTime
+        case vr.dispStartTime %'q'
             start_last_end = ['start:' vr.startTime ' lastRew:' vr.lastRewEarned ' curr:' datestr(rem(now,1))];
             display(start_last_end);
             
-        case vr.dispWhatever
-            
-            if vr.wait4stop>0
-                wait4stop_times = vr.wait4stop_times; display(wait4stop_times)
-                median_wait4stop = median(vr.wait4stop_times); display(median_wait4stop)
-                
-                iTrialType=1;
-                
-                while ~isempty(vr.rewTrials{iTrialType}) && iTrialType<=2
-                    percentRew = [iTrialType sum(vr.rewTrials{iTrialType})/length(vr.rewTrials{iTrialType})];
-                    display(percentRew)
-                    iTrialType=iTrialType+1;
-                end
-                
-                iTrialType=1;
-                while ~isempty(vr.rewTrials{iTrialType}) && iTrialType<=2
-                    startLatency = [iTrialType mean(vr.startLatency{iTrialType})];
-                    display(startLatency)
-                    iTrialType=iTrialType+1;
-                end
-                
-            end
+        case vr.dispSeconds %'t'
+            display(vr.flippin_duringSL)
+            flippin_duringSL_ReappearWait_ITISW = [vr.flippin_duringSL vr.flippin_duringReappearWait vr.fluppin_duringITI_SW];
+            display(flippin_duringSL_ReappearWait_ITISW)
+
     end
 end
 
 if vr.event_newTrial > 0 % sent AO signal for new trial signaling trial type
     vr.event_newTrial = 0;
-    if vr.dispSet > 0
-        disp('event_newTrial');
-    end
+    
+    disp('event_newTrial');
+    
     out_data = vr.event_newTrial_outdata{vr.B}{vr.A};
     if vr.daq_flag == 1
         putdata(vr.ao, out_data);
