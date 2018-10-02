@@ -55,9 +55,9 @@ vr.engagingSW = 0;% keep track of how long the mouse has been engagin in a track
 vr.wait4stop_SW=0; % keep track of how long it takes mouse to stop after required ITI duration has passed
 vr.wait4stop_times = []; %array to store wait4stop
 vr.plot_SW =0;% to make some delay between when the reward is delivered and whent the figure is plotted
-vr.searchtime_duringSL = 1;
-vr.searchtime_duringReappearWait=1;
-vr.flippin_duringITI_SW = 1;
+vr.searchtime_duringSL = 0;
+vr.searchtime_duringReappearWait=0;
+vr.flippin_duringITI_SW = 0;
 %initialize flags
 vr.reappear_flag=0;
 vr.abort_flag = 0;
@@ -78,9 +78,9 @@ vr.engageLatency_times = [];
 vr.wait4stop=0; % set to positive value to require mouseStop to initiate new trial
 vr.okNewTrial=0; % start new trial after ITI or after ITI + mouseStopped
 vr.waiting4start =0; %whether or not waiting for the mouse to start running
-vr.flippin_duringITI=0; %coin-flippin count during ITI
-vr.flippin_duringSL=0; %coin-flippin count during start latency
-vr.flippin_duringReappearWait=0; %coin-flippin count during waiting for permission to reappear
+vr.flippin_duringITI=1; %coin-flippin count during ITI
+vr.flippin_duringSL=1; %coin-flippin count during start latency
+vr.flippin_duringReappearWait=1; %coin-flippin count during waiting for permission to reappear
 vr.start_queue_indx=1;% indx to cycle through the queue
 vr.queue_indx_stop = 1; % indx to cycle through the queue
 vr.plotAI=0; % plots analog input
@@ -469,7 +469,7 @@ if vr.ITI==0 && vr.abort_flag ==0
             %track1 appears
             vr.B=1;
             vr.reappear_flag=1;%set reappearing flag to one so that if mouse abort this trial, the new track will appear right after 2 sec
-            vr.flippin_duringReappearWait=0;%reset reappear waiting time to zero
+            vr.flippin_duringReappearWait=1;%reset reappear waiting time to zero
             vr.flipping = 0;% no more flipping once get positive
             vr.searchtime_duringSL = vr.startTrial_SW;%how many seconds has passed by the time the coin was flipped positive
             %disp('aaaa')
@@ -477,7 +477,7 @@ if vr.ITI==0 && vr.abort_flag ==0
             %track2 appears
             vr.B=2;
             vr.reappear_flag=1;
-            vr.flippin_duringReappearWait=0;
+            vr.flippin_duringReappearWait=1;
             vr.flipping = 0;
             vr.searchtime_duringSL = vr.startTrial_SW;%how many seconds has passed by the time the coin was flipped positive
             %disp('bbbb')
@@ -491,7 +491,7 @@ if vr.ITI==0 && vr.abort_flag ==0
                 vr.track1_occur_or_not = 0;
                 vr.B=2;
                 vr.reappear_flag=1;
-                vr.flippin_duringReappearWait=0;
+                vr.flippin_duringReappearWait=1;
                 vr.flipping = 0;
                 vr.searchtime_duringSL = vr.startTrial_SW;%how many seconds has passed by the time the coin was flipped positive
                 
@@ -501,7 +501,7 @@ if vr.ITI==0 && vr.abort_flag ==0
                 vr.track1_occur_or_not = 1;
                 vr.B=1;
                 vr.reappear_flag=1;
-                vr.flippin_duringReappearWait=0;
+                vr.flippin_duringReappearWait=1;
                 vr.flipping = 0;
                 vr.searchtime_duringSL = vr.startTrial_SW;%how many seconds has passed by the time the coin was flipped positive
                 
@@ -538,7 +538,7 @@ if vr.ITI==0 && vr.abort_flag ==0
             vr.engageLatency = 0;
             vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
             vr.wait4reappear_SW = 0;%reset wait4reappear SW
-            vr.flippin_duringReappearWait=0;%reset reappear waiting time count to zero
+            vr.flippin_duringReappearWait=1;%reset reappear waiting time count to zero
             if vr.reappear_flag ==0
                 vr.searchtime_duringSL = vr.startTrial_SW;
             end
@@ -717,7 +717,7 @@ if vr.ITI > 0
         end
         %%%%%%
         vr.searchtime_SW = 0;%initialize the search time SW
-        vr.flippin_duringITI=0;%initialize the flippin count during ITI
+        vr.flippin_duringITI=1;%initialize the flippin count during ITI
         vr.plotAI=1; % plot analog input from previous trial
     end
     
@@ -919,8 +919,8 @@ if vr.ITI > 0
         vr.trialTimer_SW=0; % reset trial timer
         vr.reappear_flag=0;
         
-        vr.searchtime_duringSL = 1;
-        vr.searchtime_duringReappearWait=1;
+        vr.searchtime_duringSL = 0;
+        vr.searchtime_duringReappearWait=0;
         
         %reset start speed queue to detect mouse start
         vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
