@@ -55,9 +55,9 @@ vr.engagingSW = 0;% keep track of how long the mouse has been engagin in a track
 vr.wait4stop_SW=0; % keep track of how long it takes mouse to stop after required ITI duration has passed
 vr.wait4stop_times = []; %array to store wait4stop
 vr.plot_SW =0;% to make some delay between when the reward is delivered and whent the figure is plotted
-vr.searchtime_duringSL = 0;
-vr.searchtime_duringReappearWait=0;
-vr.fluppin_duringITI_SW = 0;
+vr.searchtime_duringSL = 1;
+vr.searchtime_duringReappearWait=1;
+vr.fluppin_duringITI_SW = 1;
 %initialize flags
 vr.reappear_flag=0;
 vr.abort_flag = 0;
@@ -919,8 +919,8 @@ if vr.ITI > 0
         vr.trialTimer_SW=0; % reset trial timer
         vr.reappear_flag=0;
         
-        vr.searchtime_duringSL = 0;
-        vr.searchtime_duringReappearWait=0;
+        vr.searchtime_duringSL = 1;
+        vr.searchtime_duringReappearWait=1;
         
         %reset start speed queue to detect mouse start
         vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
