@@ -57,7 +57,7 @@ vr.wait4stop_times = []; %array to store wait4stop
 vr.plot_SW =0;% to make some delay between when the reward is delivered and whent the figure is plotted
 vr.searchtime_duringSL = 1;
 vr.searchtime_duringReappearWait=1;
-vr.fluppin_duringITI_SW = 1;
+vr.flippin_duringITI_SW = 1;
 %initialize flags
 vr.reappear_flag=0;
 vr.abort_flag = 0;
@@ -603,7 +603,7 @@ if vr.ITI > 0
         if (vr.ITI==2 && vr.ITI_SW >= vr.delay2disappear)
             vr.searchtime_SW = 0;%initialize the search time SW
             vr.ITI=3;
-            vr.fluppin_duringITI_SW = 0;
+            vr.flippin_duringITI_SW = 0;
         end
         % make track(s) disappear
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
@@ -702,7 +702,7 @@ if vr.ITI > 0
                         if vr.wait4reappear_SW > 2 && vr.reappear_flag == 0
                             vr.ITI=3;
                             vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
-                            vr.fluppin_duringITI_SW = 0;
+                            vr.flippin_duringITI_SW = 0;
                         end
                     end
                 end
@@ -731,7 +731,7 @@ if vr.ITI > 0
         end
         %vr.searchtime=vr.searchtime_duringSL + vr.searchtime_duringReappearWait;
         vr.searchtime_SW = vr.searchtime_SW + vr.dt;% add time passed to the search time SW
-        vr.fluppin_duringITI_SW = vr.fluppin_duringITI_SW + vr.dt;
+        vr.flippin_duringITI_SW = vr.flippin_duringITI_SW + vr.dt;
         if vr.wait4stop > 0 % begin next ITI if do not need to wait for stop, otherwise initialize speed queue
             %reset speed queue to detect mouse stop
             vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);%initialize the speed queue
@@ -739,7 +739,7 @@ if vr.ITI > 0
             vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
         end
         
-        if vr.fluppin_duringITI_SW > vr.flippin_duringITI
+        if vr.flippin_duringITI_SW > vr.flippin_duringITI
             %flip coin
             n=rand(1);
             if n < vr.freq_high_value
