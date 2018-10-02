@@ -693,7 +693,7 @@ if vr.ITI > 0
                     else
                         
                         %track does not appear in this sec, keep flipping the coin
-                        if vr.B==1
+                        if vr.toggle_flag==1
                         disp('seconds passed flippin_duringReappearWait')
                         disp(vr.flippin_duringReappearWait)
                         end
@@ -790,7 +790,7 @@ if vr.ITI > 0
             else
                 %track does not appear in this sec, keep flipping the coin
             end
-            if vr.B==1
+            if vr.toggle_flag==1
                 disp('seconds passed flippin_duringITI')
                 disp(vr.flippin_duringITI)
             end
