@@ -68,7 +68,7 @@ vr.sound_flag = 0;
 vr.flipping = 0;
 vr.env_change_flag =0;
 vr.changed_or_not_yet_flag = 0;
-
+vr.toggle_flag = 0;
 %initialize values
 vr.delay2disappear=.5; % delay until track disappears following reward
 vr.rewEarned = 0; % set to value for rew size when reward is earned
@@ -150,7 +150,7 @@ vr.trackLength = eval(vr.exper.variables.floor1height);
 vr.dispStartTime = 81; %'q'
 vr.dispWater = 87; %'w'
 vr.dispHistory = 69; %'e'
-vr.dispSeconds = 84; %'t'
+vr.dispToggle = 84; %'t'
 
 %when debugging use shorter handling time and more frequent prey encounter
 %(just for the sake of convernience)
@@ -518,8 +518,10 @@ if vr.ITI==0 && vr.abort_flag ==0
         elseif vr.B==2
             vr.A=2;
         end
-        %disp('seconds passed flippin_duringSL')
-        %disp(vr.flippin_duringSL)
+        if vr.toggle_flag == 1
+            disp('seconds passed flippin_duringSL')
+            disp(vr.flippin_duringSL)
+        end
     end
     
     %% MOUSE DID NOT RUN, ABORT TRIAL
@@ -691,9 +693,10 @@ if vr.ITI > 0
                     else
                         
                         %track does not appear in this sec, keep flipping the coin
-                        
-                        %disp('seconds passed flippin_duringReappearWait')
-                        %disp(vr.flippin_duringReappearWait)
+                        if vr.B==1
+                        disp('seconds passed flippin_duringReappearWait')
+                        disp(vr.flippin_duringReappearWait)
+                        end
                         %if 2 sec has passed without positive coin, go to search
                         %time
                         if vr.wait4reappear_SW > 2 && vr.reappear_flag == 0
@@ -787,9 +790,10 @@ if vr.ITI > 0
             else
                 %track does not appear in this sec, keep flipping the coin
             end
-            %disp('seconds passed flippin_duringITI')
-            %disp(vr.flippin_duringITI)
-            
+            if vr.B==1
+                disp('seconds passed flippin_duringITI')
+                disp(vr.flippin_duringITI)
+            end
         end
         %%%%%%%
         
@@ -916,7 +920,7 @@ if vr.ITI > 0
         vr.reappear_flag=0;
         
         vr.searchtime_duringSL = 0;
-        vr.searchtime_duringReappearWait=0;;
+        vr.searchtime_duringReappearWait=0;
         
         %reset start speed queue to detect mouse start
         vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
@@ -1002,11 +1006,13 @@ if isnan(x) ~= 1
             start_last_end = ['start:' vr.startTime ' lastRew:' vr.lastRewEarned ' curr:' datestr(rem(now,1))];
             display(start_last_end);
             
-        case vr.dispSeconds %'t'
-            display(vr.flippin_duringSL)
-            flippin_duringSL_ReappearWait_ITISW = [vr.flippin_duringSL vr.flippin_duringReappearWait vr.fluppin_duringITI_SW];
-            display(flippin_duringSL_ReappearWait_ITISW)
-
+        case vr.dispToggle %'t'
+            if vr.toggle_flag ==0
+                vr.toggle_flag = 1;
+            elseif vr.toggle_flag ==1
+                vr.toggle_flag = 0;
+            end
+            
     end
 end
 
