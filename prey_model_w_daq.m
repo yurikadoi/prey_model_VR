@@ -619,7 +619,7 @@ if vr.ITI > 0
         %there is a 2 sec delay between the abortion and the next track appearing (I named it as
         %reappearing).
         if vr.abort_flag == 1
-            
+            vr.plot_SW =0;
             vr.reappear_SW_turnedON = 1;
             % make track(s) disappear
             vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
