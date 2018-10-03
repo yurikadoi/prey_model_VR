@@ -31,7 +31,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 %vr.currTrack_ID=1;
@@ -193,8 +193,8 @@ switch vr.mouseID
         vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
         vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
-        vr.STOP_CRIT = 0.04;
-        vr.START_CRIT = 0.1;
+        vr.STOP_CRIT = 0.03;
+        vr.START_CRIT = 0.09;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
         vr.queue_len_start=30;
         
@@ -206,8 +206,8 @@ switch vr.mouseID
         vr.y_disposition = 0.15;% determines the speed of movement of track
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
-        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
-        vr.change_timing = 3*60; %at what seconds, does the environment change
+        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.change_timing = 20*60; %at what seconds, does the environment change
         
         if vr.debugYurika == 0
             vr.freq_high_value=vr.lambda_1A;
@@ -230,8 +230,8 @@ switch vr.mouseID
         vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
         
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
-        vr.STOP_CRIT = 0.04;
-        vr.START_CRIT = 0.1;
+        vr.STOP_CRIT = 0.03;
+        vr.START_CRIT = 0.11;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
         vr.queue_len_start=30;
         
@@ -244,7 +244,7 @@ switch vr.mouseID
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         
-        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
         if vr.debugYurika == 0
@@ -268,8 +268,8 @@ switch vr.mouseID
         vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
         
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
-        vr.STOP_CRIT = 0.06;
-        vr.START_CRIT = 0.045;
+        vr.STOP_CRIT = 0.03;
+        vr.START_CRIT = 0.065;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
         vr.queue_len_start=20;
         
@@ -282,7 +282,7 @@ switch vr.mouseID
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         
-        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
         if vr.debugYurika == 0
