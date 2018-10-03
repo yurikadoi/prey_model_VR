@@ -31,7 +31,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 %vr.currTrack_ID=1;
@@ -207,7 +207,7 @@ switch vr.mouseID
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
-        vr.change_timing = 20*60; %at what seconds, does the environment change
+        vr.change_timing = 2*60; %at what seconds, does the environment change
         
         if vr.debugYurika == 0
             vr.freq_high_value=vr.lambda_1A;
@@ -1055,6 +1055,13 @@ while iTrialType<=2 && ~isempty(vr.rewTrials{iTrialType})
     summary.percentRew(iTrialType) = sum(vr.rewTrials{iTrialType})/length(vr.rewTrials{iTrialType}); display(percentRew)
     iTrialType=iTrialType+1;
 end
+
+if vr.env_change_flag ==1 && vr.trialNum_change_timing > 1
+    percent_before_after = [sum(vr.rewTrials{2}(1:vr.trialNum_change_timing))/length(vr.rewTrials{2}(1:vr.trialNum_change_timing)) sum(vr.rewTrials{2}(vr.trialNum_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_change_timing:end))];
+    summary.percent_before_after = percent_before_after;
+    display(percent_before_after);
+end
+
 
 if vr.daq_flag == 1
     if ~vr.debugMode
