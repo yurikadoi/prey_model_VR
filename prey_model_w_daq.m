@@ -31,7 +31,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 %vr.currTrack_ID=1;
@@ -84,7 +84,7 @@ vr.flippin_duringReappearWait=1; %coin-flippin count during waiting for permissi
 vr.start_queue_indx=1;% indx to cycle through the queue
 vr.queue_indx_stop = 1; % indx to cycle through the queue
 vr.plotAI=0; % plots analog input
-
+vr.trialNum_change_timing =0;
 if vr.debugMode % set to 'true' in ViRMEn GUI when debugging on the rig to set all means (ITI, distance, etc) to low values for quicker debugging
     disp('DEBUG MODE RUNNING')
 end
@@ -193,8 +193,8 @@ switch vr.mouseID
         vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
         vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
-        vr.STOP_CRIT = 0.03;
-        vr.START_CRIT = 0.09;
+        vr.STOP_CRIT = 0.025;
+        vr.START_CRIT = 0.1;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
         vr.queue_len_start=30;
         
@@ -210,7 +210,7 @@ switch vr.mouseID
         vr.change_timing = 2*60; %at what seconds, does the environment change
         
         if vr.debugYurika == 0
-            vr.freq_high_value=vr.lambda_1A;
+            vr.freq_high_value=vr.lambda_1B;
             vr.freq_low_value=vr.lambda_2;
             
         else
@@ -230,8 +230,8 @@ switch vr.mouseID
         vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
         
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
-        vr.STOP_CRIT = 0.03;
-        vr.START_CRIT = 0.11;
+        vr.STOP_CRIT = 0.025;
+        vr.START_CRIT = 0.12;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
         vr.queue_len_start=30;
         
@@ -248,7 +248,7 @@ switch vr.mouseID
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
         if vr.debugYurika == 0
-            vr.freq_high_value=vr.lambda_1A;
+            vr.freq_high_value=vr.lambda_1B;
             vr.freq_low_value=vr.lambda_2;
             
         else
@@ -268,13 +268,13 @@ switch vr.mouseID
         vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
         
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
-        vr.STOP_CRIT = 0.03;
-        vr.START_CRIT = 0.065;
+        vr.STOP_CRIT = 0.025;
+        vr.START_CRIT = 0.07;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
         vr.queue_len_start=20;
         
         vr.start4engage = 1;%0: if do not need to start running to engage, 1: if they need to start running to engage
-        vr.start_latency_CRIT = 10;%within how many seconds should they start running to engage with the trial
+        vr.start_latency_CRIT = 8;%within how many seconds should they start running to engage with the trial
         
         vr.progRatioStart = 1;% 9:is the maximum and goal of the training
         
@@ -286,7 +286,7 @@ switch vr.mouseID
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
         if vr.debugYurika == 0
-            vr.freq_high_value=vr.lambda_1A;
+            vr.freq_high_value=vr.lambda_1B;
             vr.freq_low_value=vr.lambda_2;
             
         else
@@ -1056,11 +1056,11 @@ while iTrialType<=2 && ~isempty(vr.rewTrials{iTrialType})
     iTrialType=iTrialType+1;
 end
 
-if vr.env_change_flag ==1 && vr.trialNum_change_timing > 1
-    percent_before_after = [sum(vr.rewTrials{2}(1:vr.trialNum_change_timing))/length(vr.rewTrials{2}(1:vr.trialNum_change_timing)) sum(vr.rewTrials{2}(vr.trialNum_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_change_timing:end))];
-    summary.percent_before_after = percent_before_after;
-    display(percent_before_after);
-end
+% if vr.env_change_flag ==1 && vr.trialNum_change_timing > 1
+%     percent_before_after = [sum(vr.rewTrials{2}(1:vr.trialNum_change_timing))/length(vr.rewTrials{2}(1:vr.trialNum_change_timing)) sum(vr.rewTrials{2}(vr.trialNum_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_change_timing:end))];
+%     summary.percent_before_after = percent_before_after;
+%     display(percent_before_after);
+% end
 
 
 if vr.daq_flag == 1
