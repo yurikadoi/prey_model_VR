@@ -31,7 +31,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 %vr.currTrack_ID=1;
@@ -158,17 +158,17 @@ if vr.debugYurika == 0
     vr.handling_time{1}=15;
     vr.handling_time{2}=30;
     
-    vr.lambda_1A = 1/60;
-    vr.lambda_1B = 1/30;
-    vr.lambda_1C = 1/15;
-    vr.lambda_2 = 1/30;
+    vr.lambda_1A = 1/72;
+    vr.lambda_1B = 1/36;
+    vr.lambda_1C = 1/18;
+    vr.lambda_2 = 1/36;
 else
     vr.handling_time{1}=5;
     vr.handling_time{2}=10;
-    vr.lambda_1A = 1/60;
-    vr.lambda_1B = 1/30;
-    vr.lambda_1C = 1/15;
-    vr.lambda_2 = 1/30;
+    vr.lambda_1A = 1/72;
+    vr.lambda_1B = 1/36;
+    vr.lambda_1C = 1/18;
+    vr.lambda_2 = 1/36;
 end
 
 
@@ -537,7 +537,7 @@ if vr.ITI==0 && vr.abort_flag ==0
             vr.RewSize = 0;
             vr.engageLatency = 0;
             vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
-            vr.wait4reappear_SW = 0;%reset wait4reappear SW
+            
             vr.flippin_duringReappearWait=1;%reset reappear waiting time count to zero
             if vr.reappear_flag ==0
                 vr.searchtime_duringSL = vr.startTrial_SW;
@@ -558,7 +558,7 @@ if vr.ITI==0 && vr.abort_flag ==0
         disp('position > rewLocation')
         vr.ITI = 0.5;
         vr.flipping = 1;
-        vr.reappear_flag=0;
+        %vr.reappear_flag=0;
     end
 end
 
@@ -590,21 +590,20 @@ if vr.ITI > 0
     %% initialize ITI
     if vr.ITI==1 % initialize after rewarded trial
         disp('ITI=1')
+        vr.wait4reappear_SW = 0;%reset wait4reappear SW
         vr.ITI_SW = 0 - vr.dt; % initialize SW to -vr.dt because adding vr.dt to SW later this same iteration
         vr.ITI=2; % run next block after 'delay2disappear' time has elapsed
     elseif vr.ITI==1.5 % initialize after aborted trial
         disp('ITI=1.5')
+        vr.wait4reappear_SW = 0;%reset wait4reappear SW
         vr.ITI_SW = 0 - vr.dt; % initialize SW to -vr.dt because adding vr.dt to SW later this same iteration
         vr.ITI=2.5;
     end
     
     %% track disappears following delay after reward(ITI=2) or immediately after aborted trial(ITI=2.5)
     if (vr.ITI==2 && vr.ITI_SW >= vr.delay2disappear) || (vr.ITI==2.5 && vr.ITI_SW >= vr.delay2disappear)
-        if (vr.ITI==2 && vr.ITI_SW >= vr.delay2disappear)
-            vr.searchtime_SW = 0;%initialize the search time SW
-            vr.ITI=3;
-            vr.flippin_duringITI_SW = 0;
-        end
+        vr.plot_SW =0;
+        vr.reappear_SW_turnedON = 1;
         % make track(s) disappear
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{2}) = 0;
@@ -614,107 +613,94 @@ if vr.ITI > 0
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{2}) = vr.track_zOrig{2}+60;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{3}) = vr.track_zOrig{3}+60;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
-        %%%%%%%
-        %there is a 2 sec delay between the abortion and the next track appearing (I named it as
-        %reappearing).
-        if vr.abort_flag == 1
-            vr.plot_SW =0;
-            vr.reappear_SW_turnedON = 1;
-            % make track(s) disappear
-            vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
-            vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{2}) = 0;
-            vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{3}) = 0;
-            vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{4}) = 0;
-            vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{1}) = vr.track_zOrig{1}+60;
-            vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{2}) = vr.track_zOrig{2}+60;
-            vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{3}) = vr.track_zOrig{3}+60;
-            vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
-            vr.wait4reappear_SW = vr.wait4reappear_SW + vr.dt;% add elapsed time to stopwatch
+        vr.wait4reappear_SW = vr.wait4reappear_SW + vr.dt;% add elapsed time to stopwatch
+        
+        %if coin was flipped positive during start latency, just wait for 2
+        %sec and go to ITI=4
+        if vr.reappear_flag == 1 && vr.wait4reappear_SW > 2
+            vr.ITI=4;
+            vr.sound_flag = 1;
+            vr.reappear_flag = 2;
+            display('!!!!!!!!!')
+        end
+        %if coin was flipped negative during start latency, keep flipping
+        %coin for 2 sec
+        if vr.reappear_flag == 0
+            %display([vr.wait4reappear_SW vr.flippin_duringReappearWait])
             
-            %if coin was flipped positive during start latency, just wait for 2
-            %sec and go to ITI=4
-            if vr.reappear_flag == 1 && vr.wait4reappear_SW > 2
-                vr.ITI=4;
-                vr.sound_flag = 1;
-                %disp('line 751')
-                vr.reappear_flag = 2;
-                
-            end
-            %if coin was flipped negative during start latency, keep flipping
-            %coin for 2 sec
-            if vr.reappear_flag == 0
-                %flip coin for 2 sec
-                if vr.wait4reappear_SW > vr.flippin_duringReappearWait && vr.flippin_duringReappearWait < 2.5
-                    %flip coin
-                    n=rand(1);
-                    if n < vr.freq_high_value
-                        vr.track1_occur_or_not=1;
-                    else
-                        vr.track1_occur_or_not=0;
-                    end
-                    m=rand(1);
-                    if m < vr.freq_low_value
-                        vr.track2_occur_or_not=1;
-                    else
-                        vr.track2_occur_or_not=0;
-                    end
-                    vr.flippin_duringReappearWait=vr.flippin_duringReappearWait+1;
-                    if vr.track1_occur_or_not ==1 && vr.track2_occur_or_not == 0
-                        %track1 appears
-                        vr.B=1;
-                        vr.reappear_flag = 1;
-                        vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
-                        
-                    elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
-                        %track2 appears
+            %flip coin for 2 sec
+            if vr.wait4reappear_SW > vr.flippin_duringReappearWait && vr.flippin_duringReappearWait < 2.5
+                %flip coin
+                n=rand(1);
+                if n < vr.freq_high_value
+                    vr.track1_occur_or_not=1;
+                else
+                    vr.track1_occur_or_not=0;
+                end
+                m=rand(1);
+                if m < vr.freq_low_value
+                    vr.track2_occur_or_not=1;
+                else
+                    vr.track2_occur_or_not=0;
+                end
+                vr.flippin_duringReappearWait=vr.flippin_duringReappearWait+1;
+                if vr.track1_occur_or_not ==1 && vr.track2_occur_or_not == 0
+                    %track1 appears
+                    vr.B=1;
+                    vr.reappear_flag = 1;
+                    vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
+                    
+                elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
+                    %track2 appears
+                    vr.B=2;
+                    vr.reappear_flag = 1;
+                    vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
+                    
+                elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
+                    %flip another coin
+                    l=rand(1);
+                    if l < vr.freq_low_value/(vr.freq_high_value + vr.freq_low_value)
+                        vr.track2_occur_or_not = 1;
+                        vr.track1_occur_or_not = 0;
                         vr.B=2;
                         vr.reappear_flag = 1;
                         vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
                         
-                    elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
-                        %flip another coin
-                        l=rand(1);
-                        if l < vr.freq_low_value/(vr.freq_high_value + vr.freq_low_value)
-                            vr.track2_occur_or_not = 1;
-                            vr.track1_occur_or_not = 0;
-                            vr.B=2;
-                            vr.reappear_flag = 1;
-                            vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
-                            
-                        else
-                            vr.track2_occur_or_not = 0;
-                            vr.track1_occur_or_not = 1;
-                            vr.B=1;
-                            vr.reappear_flag = 1;
-                            vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
-                            
-                        end
-                        
                     else
+                        vr.track2_occur_or_not = 0;
+                        vr.track1_occur_or_not = 1;
+                        vr.B=1;
+                        vr.reappear_flag = 1;
+                        vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
                         
-                        %track does not appear in this sec, keep flipping the coin
-                        if vr.toggle_flag==1
+                    end
+                    
+                else
+                    
+                    %track does not appear in this sec, keep flipping the coin
+                    if vr.toggle_flag==1
                         disp('seconds passed flippin_duringReappearWait')
                         disp(vr.flippin_duringReappearWait)
-                        end
-                        %if 2 sec has passed without positive coin, go to search
-                        %time
-                        if vr.wait4reappear_SW > 2 && vr.reappear_flag == 0
-                            vr.ITI=3;
-                            vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
-                            vr.flippin_duringITI_SW = 0;
-                        end
                     end
+                    %if 2 sec has passed without positive coin, go to search
+                    %time
+                    
                 end
-            end
-            %%%%%%%
-            
-            if vr.B==1
-                vr.A=4;
-            elseif vr.B==2
-                vr.A=2;
+            elseif vr.wait4reappear_SW > 2 && vr.reappear_flag == 0
+                vr.ITI=3;
+                vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
+                vr.flippin_duringITI_SW = 0;
+                
             end
         end
+        %%%%%%%
+        
+        if vr.B==1
+            vr.A=4;
+        elseif vr.B==2
+            vr.A=2;
+        end
+        %end
         %%%%%%
         vr.searchtime_SW = 0;%initialize the search time SW
         vr.flippin_duringITI=1;%initialize the flippin count during ITI
