@@ -116,8 +116,8 @@ end
 %% determine the index of tracks
 vr.indx_track{1} = vr.worlds{vr.currentWorld}.objects.indices.mainFloor1;
 vr.indx_track{2} = vr.worlds{vr.currentWorld}.objects.indices.mainFloor1B;
-vr.indx_track{3} = vr.worlds{vr.currentWorld}.objects.indices.mainFloor1_bright;
-vr.indx_track{4} = vr.worlds{vr.currentWorld}.objects.indices.mainFloor1B_bright;
+%vr.indx_track{3} = vr.worlds{vr.currentWorld}.objects.indices.mainFloor1_bright;
+%vr.indx_track{4} = vr.worlds{vr.currentWorld}.objects.indices.mainFloor1B_bright;
 % get all relevant coordinates, etc. for tracks (floors)
 for k = 1:length(vr.indx_track)
     
@@ -209,6 +209,8 @@ switch vr.mouseID
         vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
+        vr.brightness = .6;
+        
         if vr.debugYurika == 0
             vr.freq_high_value=vr.lambda_1B;
             vr.freq_low_value=vr.lambda_2;
@@ -247,6 +249,8 @@ switch vr.mouseID
         vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
+        vr.brightness = .6;
+        
         if vr.debugYurika == 0
             vr.freq_high_value=vr.lambda_1B;
             vr.freq_low_value=vr.lambda_2;
@@ -284,6 +288,8 @@ switch vr.mouseID
         
         vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 20*60; %at what seconds, does the environment change
+        
+        vr.brightness = .8;
         
         if vr.debugYurika == 0
             vr.freq_high_value=vr.lambda_1B;
@@ -357,22 +363,22 @@ else
 end
 switch vr.B
     case 1
-        vr.currTrack_ID=1; otherTrack=2; curr_brightTrack=3; other_brightTrack = 4;
+        vr.currTrack_ID=1; otherTrack=2; %curr_brightTrack=3; other_brightTrack = 4;
         vr.currentA = 4; vr.currentB = 1;
     case 2
-        vr.currTrack_ID=2; otherTrack=1; curr_brightTrack=4; other_brightTrack = 3;
+        vr.currTrack_ID=2; otherTrack=1; %curr_brightTrack=4; other_brightTrack = 3;
         vr.currentA = 2; vr.currentB = 2;
 end
 vr.CBA = vr.A + vr.B*10 + vr.C*100;
 
 vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 0;
 vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{otherTrack}) = 0;
-vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{curr_brightTrack}) = 0;
-vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{other_brightTrack}) = 0;
+%vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{curr_brightTrack}) = 0;
+%vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{other_brightTrack}) = 0;
 vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID}+60;
 vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{otherTrack}) = vr.track_zOrig{otherTrack}+60;
-vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{curr_brightTrack}) = vr.track_zOrig{curr_brightTrack}+60;
-vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{other_brightTrack}) = vr.track_zOrig{other_brightTrack}+60;
+%vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{curr_brightTrack}) = vr.track_zOrig{curr_brightTrack}+60;
+%vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{other_brightTrack}) = vr.track_zOrig{other_brightTrack}+60;
 
 
 %% DELIVER 2uL WATER TO START SESSION - you are delivering large here, not small ***
@@ -565,10 +571,10 @@ end
 if vr.ITI == 0.5
     vr.dp=[0 0 0 0];
     %make the track brighter to let the mouse know this is the goal
-    vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 0;
-    vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID+2}) = 1;
-    vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID}+60;
-    vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID+2}) = vr.track_zOrig{vr.currTrack_ID+2};
+    vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = vr.brightness + 0.2;
+    %vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID+2}) = 1;
+    %vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID}+60;
+    %vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID+2}) = vr.track_zOrig{vr.currTrack_ID+2};
     vr.ITI=1;
     A_currentA = [vr.A vr.currentA];
     display(A_currentA)
@@ -607,12 +613,12 @@ if vr.ITI > 0
         % make track(s) disappear
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{2}) = 0;
-        vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{3}) = 0;
-        vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{4}) = 0;
+        %vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{3}) = 0;
+        %vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{4}) = 0;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{1}) = vr.track_zOrig{1}+60;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{2}) = vr.track_zOrig{2}+60;
-        vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{3}) = vr.track_zOrig{3}+60;
-        vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
+        %vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{3}) = vr.track_zOrig{3}+60;
+        %vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
         vr.wait4reappear_SW = vr.wait4reappear_SW + vr.dt;% add elapsed time to stopwatch
         
         %if coin was flipped positive during start latency, just wait for 2
@@ -886,7 +892,7 @@ if vr.ITI > 0
                 vr.currTrack_ID=2;
                 vr.rewLocation = vr.long_distance;
         end
-        vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 1;
+        vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = vr.brightness;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID};
         vr.atStartLocation = 1;
         
