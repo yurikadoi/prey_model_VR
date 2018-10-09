@@ -73,8 +73,9 @@ vr.toggle_flag = 0;
 vr.delay2disappear=.5; % delay until track disappears following reward
 vr.rewEarned = 0; % set to value for rew size when reward is earned
 vr.atStartLocation = 1; % 0 = onTrack, 1 = at start location
-vr.engageLatency = 0;% how long it takes the mouse to engage in a prey (only when it engages)
-vr.engageLatency_times = [];
+vr.engageLatency{1} = [];% how long it takes the mouse to engage in a prey (only when it engages)
+vr.engageLatency{2} = [];
+vr.engageLatency_thisTrial = 0;
 vr.wait4stop=0; % set to positive value to require mouseStop to initiate new trial
 vr.okNewTrial=0; % start new trial after ITI or after ITI + mouseStopped
 vr.waiting4start =0; %whether or not waiting for the mouse to start running
@@ -424,8 +425,16 @@ if vr.ITI==0 && vr.abort_flag ==0
         if vr.start_flag==0 && nanmean(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))) > vr.START_CRIT
             vr.waiting4start =0;
             vr.start_flag=1;%flag to show that mouse started to engage
-            vr.engageLatency  = vr.trialTimer_SW;%storing engage latency
-            vr.engageLatency_times = [vr.engageLatency_times vr.engageLatency];
+            vr.engageLatency_thisTrial  = vr.trialTimer_SW;%storing engage latency
+            %vr.engageLatency_times = [vr.engageLatency_times vr.engageLatency];
+            % store engage latency per track type
+            switch vr.currentB
+                case 1
+                    vr.engageLatency{1}=[vr.engageLatency{1} vr.engageLatency_thisTrial];
+                case 2
+                    vr.engageLatency{2}=[vr.engageLatency{2} vr.engageLatency_thisTrial];
+            end
+            
             vr.engagingSW = 0;%reset the engaging SW
             %vr.position(2) = vr.position(2) + vr.setSpeed*vr.dt;
             
@@ -543,7 +552,7 @@ if vr.ITI==0 && vr.abort_flag ==0
             vr.rewTrials{vr.B} = [vr.rewTrials{vr.B} 0]; % add zero for unrew trial
             vr.abort_flag = 1;
             vr.RewSize = 0;
-            vr.engageLatency = 0;
+            vr.engageLatency_thisTrial =0;
             vr.spd_circ_queue_start=zeros(vr.queue_len_start,1);
             
             vr.flippin_duringReappearWait=1;%reset reappear waiting time count to zero
@@ -860,9 +869,9 @@ if vr.ITI > 0
             end
         end
         % concatenate data from previous data to vr.preyData
-        preyData_newLine = [vr.trialNum vr.CBA vr.RewSize vr.engageLatency vr.wait4stop_SW vr.searchtime_SW];
+        preyData_newLine = [vr.trialNum vr.CBA vr.RewSize vr.engageLatency_thisTrial vr.wait4stop_SW vr.searchtime_SW];
         display(preyData_newLine)
-        vr.preyData  = [vr.preyData ; vr.trialNum vr.CBA vr.RewSize vr.engageLatency vr.wait4stop_SW vr.searchtime_SW];
+        vr.preyData  = [vr.preyData ; vr.trialNum vr.CBA vr.RewSize vr.engageLatency_thisTrial vr.wait4stop_SW vr.searchtime_SW];
         
         %dispalay the content of next trial
         okNewTrial_time_tNum_tType = [now vr.trialNum vr.CBA]; display(okNewTrial_time_tNum_tType)
@@ -1039,15 +1048,17 @@ function vr = terminationCodeFun(vr)
 %display and store
 if vr.wait4stop>0
     median_wait4stop = median(vr.wait4stop_times);
-    median_engageLatency=median(vr.engageLatency_times);
     summary.median_wait4stop=median_wait4stop; display(median_wait4stop)
-    summary.median_engageLatency=median_engageLatency; display(median_engageLatency)
+    
 end
 
 iTrialType=1;
+median_engageLatency=[];
 while iTrialType<=2 && ~isempty(vr.rewTrials{iTrialType})
     percentRew = [iTrialType sum(vr.rewTrials{iTrialType})/length(vr.rewTrials{iTrialType})];
     summary.percentRew(iTrialType) = sum(vr.rewTrials{iTrialType})/length(vr.rewTrials{iTrialType}); display(percentRew)
+    median_engageLatency_per_track=[iTrialType median(vr.engageLatency{iTrialType})];
+    summary.median_engageLatency=[median_engageLatency median(vr.engageLatency{iTrialType})]; display(median_engageLatency_per_track);
     iTrialType=iTrialType+1;
 end
 
