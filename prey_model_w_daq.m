@@ -85,6 +85,8 @@ vr.start_queue_indx=1;% indx to cycle through the queue
 vr.queue_indx_stop = 1; % indx to cycle through the queue
 vr.plotAI=0; % plots analog input
 vr.trialNum_change_timing =0;
+vr.trialNum_in_track2_change_timing = 0;
+
 if vr.debugMode % set to 'true' in ViRMEn GUI when debugging on the rig to set all means (ITI, distance, etc) to low values for quicker debugging
     disp('DEBUG MODE RUNNING')
 end
@@ -933,6 +935,7 @@ if vr.ITI > 0
         if vr.changed_or_not_yet_flag == 1 % when the env changes, store the trial number and the time of the changing timing
             disp('environment change');
             vr.trialNum_change_timing = vr.trialNum;
+            vr.trialNum_in_track2_change_timing = length(vr.rewTrials{2}) + 1;
             vr.time_change_timing = vr.sessionTimer_SW;
         end
     end
@@ -1049,7 +1052,7 @@ while iTrialType<=2 && ~isempty(vr.rewTrials{iTrialType})
 end
 
 if vr.env_change_flag ==1 && vr.trialNum_change_timing > 1 && ~isempty(vr.rewTrials{2})
-    percent_before_after = [sum(vr.rewTrials{2}(1:vr.trialNum_change_timing))/length(vr.rewTrials{2}(1:vr.trialNum_change_timing)) sum(vr.rewTrials{2}(vr.trialNum_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_change_timing:end))];
+    percent_before_after = [sum(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing))/length(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing)) sum(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))];
     summary.percent_before_after = percent_before_after;
     display(percent_before_after);
 end
