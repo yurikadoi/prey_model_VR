@@ -331,7 +331,7 @@ vr.onLg_outdata =  [5 * ones(floor(vr.LgRew/1000*vr.SR),1 ); zeros(1, 1)]; vr.on
 
 %create sound outdata for DAQ board
 vr.sound_length = 50;
-vr.sound_outdata = [zeros(vr.sound_length,1) zeros(vr.sound_length,1) zeros(vr.sound_length,1) 5*ones(vr.sound_length,1)];
+vr.sound_outdata = [zeros(vr.sound_length,1) -4*ones(vr.sound_length,1) zeros(vr.sound_length,1) 5*ones(vr.sound_length,1)];
 
 %% event signals to send to DAQ board
 vr.event_engageTrial_outdata=[zeros(10,1) 0.5*ones(10,1) zeros(10,1) zeros(10,1)];
