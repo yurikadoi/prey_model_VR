@@ -607,11 +607,13 @@ if vr.ITI > 0
     %% initialize ITI
     if vr.ITI==1 % initialize after rewarded trial
         disp('ITI=1')
+        vr.searchtime_SW = 0;%initialize the search time SW
         vr.wait4reappear_SW = 0;%reset wait4reappear SW
         vr.ITI_SW = 0 - vr.dt; % initialize SW to -vr.dt because adding vr.dt to SW later this same iteration
         vr.ITI=2; % run next block after 'delay2disappear' time has elapsed
     elseif vr.ITI==1.5 % initialize after aborted trial
         disp('ITI=1.5')
+        vr.searchtime_SW = 0;%initialize the search time SW
         vr.wait4reappear_SW = 0;%reset wait4reappear SW
         vr.ITI_SW = 0 - vr.dt; % initialize SW to -vr.dt because adding vr.dt to SW later this same iteration
         vr.ITI=2.5;
@@ -635,10 +637,11 @@ if vr.ITI > 0
         %if coin was flipped positive during start latency, just wait for 2
         %sec and go to ITI=4
         if vr.reappear_flag == 1 && vr.wait4reappear_SW > 2
+            vr.searchtime_SW = vr.searchtime_duringSL + vr.searchtime_duringReappearWait;
             vr.ITI=4;
             vr.sound_flag = 1;
             vr.reappear_flag = 2;
-            display('!!!!!!!!!')
+    
         end
         %if coin was flipped negative during start latency, keep flipping
         %coin for 2 sec
@@ -706,6 +709,8 @@ if vr.ITI > 0
             elseif vr.wait4reappear_SW > 2 && vr.reappear_flag == 0
                 vr.ITI=3;
                 vr.searchtime_duringReappearWait = vr.wait4reappear_SW;%how many seconds has passed by the time the coin was flipped positive
+                vr.searchtime_SW = vr.searchtime_duringSL + vr.searchtime_duringReappearWait;
+
                 vr.flippin_duringITI_SW = 0;
                 
             end
@@ -719,7 +724,7 @@ if vr.ITI > 0
         end
         %end
         %%%%%%
-        vr.searchtime_SW = 0;%initialize the search time SW
+        
         vr.flippin_duringITI=1;%initialize the flippin count during ITI
         vr.plotAI=1; % plot analog input from previous trial
     end
@@ -728,10 +733,7 @@ if vr.ITI > 0
     
     %% 3: waiting before eligible to start new trial
     if vr.ITI==3 && vr.reappear_flag==0
-        if vr.abort_flag ==1
-            vr.searchtime_SW = vr.searchtime_duringSL + vr.searchtime_duringReappearWait;
-            vr.abort_flag =0;
-        end
+        
         %vr.searchtime=vr.searchtime_duringSL + vr.searchtime_duringReappearWait;
         vr.searchtime_SW = vr.searchtime_SW + vr.dt;% add time passed to the search time SW
         vr.flippin_duringITI_SW = vr.flippin_duringITI_SW + vr.dt;
@@ -809,12 +811,13 @@ if vr.ITI > 0
     
     %% 4: waiting for mouse to stop if required to start new trial
     if vr.ITI==4
-        if vr.abort_flag ==1
-            display(vr.searchtime_duringSL);
-            display(vr.searchtime_duringReappearWait)
-            vr.searchtime_SW = vr.searchtime_duringSL + vr.searchtime_duringReappearWait;
-            vr.abort_flag =0;
-        end
+%         if vr.abort_flag ==1
+%             %display(vr.searchtime_duringSL);
+%             %display(vr.searchtime_duringReappearWait)
+%             %vr.searchtime_SW = vr.searchtime_duringSL + vr.searchtime_duringReappearWait;
+%             vr.abort_flag =0;
+%         end
+        
         if vr.ITI_SW >= vr.wait4reappear_CRIT || (vr.wait4reappear_SW >= vr.wait4reappear_CRIT && vr.reappear_SW_turnedON == 1)
             %deliver sound to let the mouse know that the search time is
             %over and they are eligible to start a new trial as soon as
@@ -1058,7 +1061,7 @@ while iTrialType<=2 && ~isempty(vr.rewTrials{iTrialType})
     percentRew = [iTrialType sum(vr.rewTrials{iTrialType})/length(vr.rewTrials{iTrialType})];
     summary.percentRew(iTrialType) = sum(vr.rewTrials{iTrialType})/length(vr.rewTrials{iTrialType}); display(percentRew)
     median_engageLatency_per_track=[iTrialType median(vr.engageLatency{iTrialType})];
-    summary.median_engageLatency=[median_engageLatency median(vr.engageLatency{iTrialType})]; display(median_engageLatency_per_track);
+    summary.median_engageLatency(iTrialType)=median(vr.engageLatency{iTrialType}); display(median_engageLatency_per_track);
     iTrialType=iTrialType+1;
 end
 
