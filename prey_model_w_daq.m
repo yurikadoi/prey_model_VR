@@ -31,7 +31,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 %vr.currTrack_ID=1;
@@ -209,8 +209,8 @@ switch vr.mouseID
         vr.y_disposition = 0.15;% determines the speed of movement of track
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
-        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
-        vr.change_timing = 20*60; %at what seconds, does the environment change
+        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.change_timing = 2*60; %at what seconds, does the environment change
         
         vr.brightness = .6;
         
