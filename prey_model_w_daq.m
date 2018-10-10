@@ -607,12 +607,20 @@ if vr.ITI > 0
     %% initialize ITI
     if vr.ITI==1 % initialize after rewarded trial
         disp('ITI=1')
+        preyData_newLine = [vr.trialNum vr.CBA vr.RewSize vr.engageLatency_thisTrial vr.wait4stop_SW vr.searchtime_SW];
+        display(preyData_newLine)
+        vr.preyData  = [vr.preyData ; vr.trialNum vr.CBA vr.RewSize vr.engageLatency_thisTrial vr.wait4stop_SW vr.searchtime_SW];
+        
         vr.searchtime_SW = 0;%initialize the search time SW
         vr.wait4reappear_SW = 0;%reset wait4reappear SW
         vr.ITI_SW = 0 - vr.dt; % initialize SW to -vr.dt because adding vr.dt to SW later this same iteration
         vr.ITI=2; % run next block after 'delay2disappear' time has elapsed
     elseif vr.ITI==1.5 % initialize after aborted trial
         disp('ITI=1.5')
+        preyData_newLine = [vr.trialNum vr.CBA vr.RewSize vr.engageLatency_thisTrial vr.wait4stop_SW vr.searchtime_SW];
+        display(preyData_newLine)
+        vr.preyData  = [vr.preyData ; vr.trialNum vr.CBA vr.RewSize vr.engageLatency_thisTrial vr.wait4stop_SW vr.searchtime_SW];
+        
         vr.searchtime_SW = 0;%initialize the search time SW
         vr.wait4reappear_SW = 0;%reset wait4reappear SW
         vr.ITI_SW = 0 - vr.dt; % initialize SW to -vr.dt because adding vr.dt to SW later this same iteration
@@ -637,11 +645,17 @@ if vr.ITI > 0
         %if coin was flipped positive during start latency, just wait for 2
         %sec and go to ITI=4
         if vr.reappear_flag == 1 && vr.wait4reappear_SW > 2
+            if vr.wait4stop > 0 % begin next ITI if do not need to wait for stop, otherwise initialize speed queue
+                %reset speed queue to detect mouse stop
+                vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);%initialize the speed queue
+                vr.queue_indx_stop = 1;% initialize the speed queue index
+                vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
+            end
             vr.searchtime_SW = vr.searchtime_duringSL + vr.searchtime_duringReappearWait;
             vr.ITI=4;
             vr.sound_flag = 1;
             vr.reappear_flag = 2;
-            vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
+            %vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
     
         end
         %if coin was flipped negative during start latency, keep flipping
@@ -742,7 +756,7 @@ if vr.ITI > 0
             %reset speed queue to detect mouse stop
             vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);%initialize the speed queue
             vr.queue_indx_stop = 1;% initialize the speed queue index
-            %vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
+            vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
         end
         
         if vr.flippin_duringITI_SW > vr.flippin_duringITI
@@ -765,14 +779,14 @@ if vr.ITI > 0
                 vr.B=1;
                 vr.ITI=4;
                 vr.sound_flag = 1;
-                vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
+                %vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
                 
             elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
                 %track2 appears
                 vr.B=2;
                 vr.ITI=4;
                 vr.sound_flag = 1;
-                vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
+                %vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
                 
             elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
                 %flip another coin
@@ -783,7 +797,7 @@ if vr.ITI > 0
                     vr.B=2;
                     vr.ITI=4;
                     vr.sound_flag = 1;
-                    vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
+                    %vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
                     
                 else
                     vr.track2_occur_or_not = 0;
@@ -791,11 +805,11 @@ if vr.ITI > 0
                     vr.B=1;
                     vr.ITI=4;
                     vr.sound_flag = 1;
-                    vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
+                    %vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
                 end
                 if vr.ITI==4
                     vr.sound_flag = 1;
-                    vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
+                    %vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
                 end
                 
             else
@@ -878,10 +892,10 @@ if vr.ITI > 0
             end
         end
         % concatenate data from previous data to vr.preyData
-        preyData_newLine = [vr.trialNum vr.CBA vr.RewSize vr.engageLatency_thisTrial vr.wait4stop_SW vr.searchtime_SW];
-        display(preyData_newLine)
-        vr.preyData  = [vr.preyData ; vr.trialNum vr.CBA vr.RewSize vr.engageLatency_thisTrial vr.wait4stop_SW vr.searchtime_SW];
-        
+%         preyData_newLine = [vr.trialNum vr.CBA vr.RewSize vr.engageLatency_thisTrial vr.wait4stop_SW vr.searchtime_SW];
+%         display(preyData_newLine)
+%         vr.preyData  = [vr.preyData ; vr.trialNum vr.CBA vr.RewSize vr.engageLatency_thisTrial vr.wait4stop_SW vr.searchtime_SW];
+%         
         %dispalay the content of next trial
         okNewTrial_time_tNum_tType = [now vr.trialNum vr.CBA]; display(okNewTrial_time_tNum_tType)
         vr.position(2) = vr.startLocation;
