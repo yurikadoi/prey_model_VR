@@ -31,7 +31,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 %vr.currTrack_ID=1;
@@ -209,7 +209,7 @@ switch vr.mouseID
         vr.y_disposition = 0.15;% determines the speed of movement of track
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
-        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
         vr.brightness = .6;
@@ -249,7 +249,7 @@ switch vr.mouseID
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         
-        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
         vr.brightness = .6;
@@ -278,10 +278,10 @@ switch vr.mouseID
         vr.STOP_CRIT = 0.025;
         vr.START_CRIT = 0.07;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
-        vr.queue_len_start=20;
+        vr.queue_len_start=30;
         
         vr.start4engage = 1;%0: if do not need to start running to engage, 1: if they need to start running to engage
-        vr.start_latency_CRIT = 8;%within how many seconds should they start running to engage with the trial
+        vr.start_latency_CRIT = 5;%within how many seconds should they start running to engage with the trial
         
         vr.progRatioStart = 1;% 9:is the maximum and goal of the training
         
@@ -289,7 +289,7 @@ switch vr.mouseID
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         
-        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
         vr.brightness = .8;
@@ -1023,7 +1023,7 @@ if isnan(x) ~= 1
         case vr.dispHistory % 'e'
             wait4stop_times = vr.wait4stop_times; display(wait4stop_times);
             
-            tData = round(vr.preyData,4);
+            tData = round(vr.preyData);
             display(tData)
             
             rews_trials_water = [sum(vr.rewTrials{1})+sum(vr.rewTrials{2}) tData(end,1) vr.totalWater];
