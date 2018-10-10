@@ -354,32 +354,32 @@ vr.long_distance = vr.progRatio_long_Dist(vr.progRatio);
 %% move correct track into place, other away/disappear, initiate variables for must run, etc
 %flip a coin to decide which track to appear as the first trial
 vr.C = 3;
-m=rand(1);
-if m > vr.freq_low_value/(vr.freq_high_value + vr.freq_low_value)
-    vr.B=1;
-    vr.A=4;
-    vr.rewLocation = vr.short_distance;
-else
-    vr.B=2;
-    vr.A=2;
-    vr.rewLocation = vr.long_distance;
-end
-switch vr.B
-    case 1
-        vr.currTrack_ID=1; otherTrack=2; %curr_brightTrack=3; other_brightTrack = 4;
-        vr.currentA = 4; vr.currentB = 1;
-    case 2
-        vr.currTrack_ID=2; otherTrack=1; %curr_brightTrack=4; other_brightTrack = 3;
-        vr.currentA = 2; vr.currentB = 2;
-end
-vr.CBA = vr.A + vr.B*10 + vr.C*100;
+% m=rand(1);
+% if m > vr.freq_low_value/(vr.freq_high_value + vr.freq_low_value)
+%     vr.B=1;
+%     vr.A=4;
+%     vr.rewLocation = vr.short_distance;
+% else
+%     vr.B=2;
+%     vr.A=2;
+%     vr.rewLocation = vr.long_distance;
+% end
+% switch vr.B
+%     case 1
+%         vr.currTrack_ID=1; otherTrack=2; %curr_brightTrack=3; other_brightTrack = 4;
+%         vr.currentA = 4; vr.currentB = 1;
+%     case 2
+%         vr.currTrack_ID=2; otherTrack=1; %curr_brightTrack=4; other_brightTrack = 3;
+%         vr.currentA = 2; vr.currentB = 2;
+% end
+% vr.CBA = vr.A + vr.B*10 + vr.C*100;
 
-vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = 0;
-vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{otherTrack}) = 0;
+vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
+vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{2}) = 0;
 %vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{curr_brightTrack}) = 0;
 %vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{other_brightTrack}) = 0;
-vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID}+60;
-vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{otherTrack}) = vr.track_zOrig{otherTrack}+60;
+vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{1}) = vr.track_zOrig{1}+60;
+vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{2}) = vr.track_zOrig{2}+60;
 %vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{curr_brightTrack}) = vr.track_zOrig{curr_brightTrack}+60;
 %vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{other_brightTrack}) = vr.track_zOrig{other_brightTrack}+60;
 
@@ -641,6 +641,7 @@ if vr.ITI > 0
             vr.ITI=4;
             vr.sound_flag = 1;
             vr.reappear_flag = 2;
+            vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
     
         end
         %if coin was flipped negative during start latency, keep flipping
@@ -741,7 +742,7 @@ if vr.ITI > 0
             %reset speed queue to detect mouse stop
             vr.spd_circ_queue_stop= ones(vr.queue_len_stop, 1);%initialize the speed queue
             vr.queue_indx_stop = 1;% initialize the speed queue index
-            vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
+            %vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
         end
         
         if vr.flippin_duringITI_SW > vr.flippin_duringITI
@@ -764,12 +765,14 @@ if vr.ITI > 0
                 vr.B=1;
                 vr.ITI=4;
                 vr.sound_flag = 1;
+                vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
                 
             elseif vr.track1_occur_or_not==0 && vr.track2_occur_or_not == 1
                 %track2 appears
                 vr.B=2;
                 vr.ITI=4;
                 vr.sound_flag = 1;
+                vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
                 
             elseif vr.track1_occur_or_not == 1 && vr.track2_occur_or_not == 1
                 %flip another coin
@@ -780,6 +783,7 @@ if vr.ITI > 0
                     vr.B=2;
                     vr.ITI=4;
                     vr.sound_flag = 1;
+                    vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
                     
                 else
                     vr.track2_occur_or_not = 0;
@@ -787,9 +791,11 @@ if vr.ITI > 0
                     vr.B=1;
                     vr.ITI=4;
                     vr.sound_flag = 1;
+                    vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
                 end
                 if vr.ITI==4
                     vr.sound_flag = 1;
+                    vr.wait4stop_SW = 0;%initialize the wait4stop stop watch
                 end
                 
             else
@@ -1003,7 +1009,7 @@ if isnan(x) ~= 1
         case vr.dispHistory % 'e'
             wait4stop_times = vr.wait4stop_times; display(wait4stop_times);
             
-            tData = round(vr.preyData);
+            tData = round(vr.preyData,4);
             display(tData)
             
             rews_trials_water = [sum(vr.rewTrials{1})+sum(vr.rewTrials{2}) tData(end,1) vr.totalWater];
