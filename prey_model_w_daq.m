@@ -354,35 +354,11 @@ vr.long_distance = vr.progRatio_long_Dist(vr.progRatio);
 %% move correct track into place, other away/disappear, initiate variables for must run, etc
 %flip a coin to decide which track to appear as the first trial
 vr.C = 3;
-% m=rand(1);
-% if m > vr.freq_low_value/(vr.freq_high_value + vr.freq_low_value)
-%     vr.B=1;
-%     vr.A=4;
-%     vr.rewLocation = vr.short_distance;
-% else
-%     vr.B=2;
-%     vr.A=2;
-%     vr.rewLocation = vr.long_distance;
-% end
-% switch vr.B
-%     case 1
-%         vr.currTrack_ID=1; otherTrack=2; %curr_brightTrack=3; other_brightTrack = 4;
-%         vr.currentA = 4; vr.currentB = 1;
-%     case 2
-%         vr.currTrack_ID=2; otherTrack=1; %curr_brightTrack=4; other_brightTrack = 3;
-%         vr.currentA = 2; vr.currentB = 2;
-% end
-% vr.CBA = vr.A + vr.B*10 + vr.C*100;
 
 vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
 vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{2}) = 0;
-%vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{curr_brightTrack}) = 0;
-%vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{other_brightTrack}) = 0;
 vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{1}) = vr.track_zOrig{1}+60;
 vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{2}) = vr.track_zOrig{2}+60;
-%vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{curr_brightTrack}) = vr.track_zOrig{curr_brightTrack}+60;
-%vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{other_brightTrack}) = vr.track_zOrig{other_brightTrack}+60;
-
 
 %% DELIVER 2uL WATER TO START SESSION - you are delivering large here, not small ***
 if vr.daq_flag == 1
@@ -583,9 +559,7 @@ if vr.ITI == 0.5
     vr.dp=[0 0 0 0];
     %make the track brighter to let the mouse know this is the goal
     vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID}) = vr.brightness + 0.2;
-    %vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{vr.currTrack_ID+2}) = 1;
-    %vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID}) = vr.track_zOrig{vr.currTrack_ID}+60;
-    %vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{vr.currTrack_ID+2}) = vr.track_zOrig{vr.currTrack_ID+2};
+    
     vr.ITI=1;
     A_currentA = [vr.A vr.currentA];
     display(A_currentA)
@@ -634,12 +608,10 @@ if vr.ITI > 0
         % make track(s) disappear
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{1}) = 0;
         vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{2}) = 0;
-        %vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{3}) = 0;
-        %vr.worlds{vr.currentWorld}.surface.colors(4,vr.trackIndx{4}) = 0;
+        
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{1}) = vr.track_zOrig{1}+60;
         vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{2}) = vr.track_zOrig{2}+60;
-        %vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{3}) = vr.track_zOrig{3}+60;
-        %vr.worlds{vr.currentWorld}.surface.vertices(3,vr.trackIndx{4}) = vr.track_zOrig{4}+60;
+        
         vr.wait4reappear_SW = vr.wait4reappear_SW + vr.dt;% add elapsed time to stopwatch
         
         %if coin was flipped positive during start latency, just wait for 2
@@ -891,11 +863,7 @@ if vr.ITI > 0
                 prevRew=0;
             end
         end
-        % concatenate data from previous data to vr.preyData
-%         preyData_newLine = [vr.trialNum vr.CBA vr.RewSize vr.engageLatency_thisTrial vr.wait4stop_SW vr.searchtime_SW];
-%         display(preyData_newLine)
-%         vr.preyData  = [vr.preyData ; vr.trialNum vr.CBA vr.RewSize vr.engageLatency_thisTrial vr.wait4stop_SW vr.searchtime_SW];
-%         
+
         %dispalay the content of next trial
         okNewTrial_time_tNum_tType = [now vr.trialNum vr.CBA]; display(okNewTrial_time_tNum_tType)
         vr.position(2) = vr.startLocation;
