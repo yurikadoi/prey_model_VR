@@ -31,7 +31,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 %vr.currTrack_ID=1;
@@ -198,7 +198,7 @@ switch vr.mouseID
         vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
         vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
         vr.STOP_CRIT = 0.025;
-        vr.START_CRIT = 0.1;
+        vr.START_CRIT = 0.09;
         vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
         vr.queue_len_start=30;
         
@@ -211,7 +211,7 @@ switch vr.mouseID
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
-        vr.change_timing = 2*60; %at what seconds, does the environment change
+        vr.change_timing = 20*60; %at what seconds, does the environment change
         
         vr.brightness = .6;
         
@@ -227,7 +227,7 @@ switch vr.mouseID
         end
         
         if vr.env_change_flag ==1 %if changing the environment in the middle of a session
-            vr.before_change_freq_high_value = vr.lambda_1A;
+            vr.before_change_freq_high_value = vr.lambda_1B;
             vr.after_change_freq_high_value = vr.lambda_1C;
         end
     case 2
@@ -267,7 +267,7 @@ switch vr.mouseID
         end
         
         if vr.env_change_flag ==1 %if changing the environment in the middle of a session
-            vr.before_change_freq_high_value = vr.lambda_1A;
+            vr.before_change_freq_high_value = vr.lambda_1B;
             vr.after_change_freq_high_value = vr.lambda_1C;
         end
     case 3
@@ -1010,36 +1010,39 @@ if isnan(x) ~= 1
                 vr.toggle_flag = 0;
             end
         case vr.dispStats
-            disp('rrrrrrrrrrrrrrrr')
-            iTrialType=1;
+            
+            %iTrialType=1;
             median_engageLatency=[];
-            if ~isempty(vr.rewTrials{iTrialType})
+            if ~isempty(vr.rewTrials{1}) && ~isempty(vr.rewTrials{2})
                 vr.percentRew_1 = [sum(vr.rewTrials{1})/length(vr.rewTrials{1})];
                 vr.median_engageLatency_1=median(vr.engageLatency{1});
                 vr.percentRew_2 = [sum(vr.rewTrials{1})/length(vr.rewTrials{2})];
                 vr.median_engageLatency_2=median(vr.engageLatency{2});
                 overall_percentRew=[vr.percentRew_1 vr.percentRew_2]; display(overall_percentRew);
-            overall_median_engage_latency=[vr.median_engageLatency_1 vr.median_engageLatency_2]; display(overall_median_engage_latency);
+                overall_median_engage_latency=[vr.median_engageLatency_1 vr.median_engageLatency_2]; display(overall_median_engage_latency);
             end
-          
+            
             if vr.wait4stop>0
                 overall_median_wait4stop = median(vr.wait4stop_times);
                 display(overall_median_wait4stop)
                 
             end
             
-            if vr.env_change_flag ==1 && vr.trialNum_change_timing > 1 && ~isempty(vr.rewTrials{2}) && ~isempty(vr.rewTrials{2})
+            if vr.env_change_flag ==1 && vr.trialNum_change_timing > 1 && ~isempty(vr.rewTrials{1}) && ~isempty(vr.rewTrials{2})
                 
                 switchFromTo = [vr.before_change_freq_high_value vr.after_change_freq_high_value]; display(switchFromTo)
                 display(vr.rewTrials{1})
                 display(vr.trialNum_in_track2_change_timing)
                 
                 percent_before_after_track1 = [sum(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing))/length(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing)) sum(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))/length(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))];
-               
+                
                 percent_before_after_track2 = [sum(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing))/length(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing)) sum(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))];
                 
-                context1_percentRew = [percent_before_after_track1(1) percent_before_after_track1(2)];display(context1_percentRew)
-                context2_percentRew = [percent_before_after_track2(1) percent_before_after_track2(2)];display(context2_percentRew)
+%                 context1_percentRew = [percent_before_after_track1(1) percent_before_after_track1(2)];display(context1_percentRew)
+%                 context2_percentRew = [percent_before_after_track2(1) percent_before_after_track2(2)];display(context2_percentRew)
+
+                context1_percentRew = [percent_before_after_track1(1) percent_before_after_track2(1)];display(context1_percentRew)
+                context2_percentRew = [percent_before_after_track1(2) percent_before_after_track2(2)];display(context2_percentRew)
             end
             
     end
@@ -1101,11 +1104,13 @@ while iTrialType<=2 && ~isempty(vr.rewTrials{iTrialType})
     median_engageLatency_per_track=[iTrialType median(vr.engageLatency{iTrialType})];
     summary.median_engageLatency(iTrialType)=median(vr.engageLatency{iTrialType});
     iTrialType=iTrialType+1;
+    
 end
-display(summary)
-overall_percentRew=[summary.percentRew(1) summary.percentRew(2)]; display(overall_percentRew);
-overall_median_engage_latency=[summary.median_engageLatency(1) summary.median_engageLatency(2)]; display(overall_median_engage_latency);
 
+if ~isempty(vr.rewTrials{1}) && ~isempty(vr.rewTrials{2})
+    overall_percentRew=[summary.percentRew(1) summary.percentRew(2)]; display(overall_percentRew);
+    overall_median_engage_latency=[summary.median_engageLatency(1) summary.median_engageLatency(2)]; display(overall_median_engage_latency);
+end
 
 if vr.wait4stop>0
     overall_median_wait4stop = median(vr.wait4stop_times);
@@ -1113,9 +1118,9 @@ if vr.wait4stop>0
     
 end
 
-if vr.env_change_flag ==1 && vr.trialNum_change_timing > 1 && ~isempty(vr.rewTrials{2}) && ~isempty(vr.rewTrials{2})
+if vr.env_change_flag ==1 && vr.trialNum_change_timing > 1 && ~isempty(vr.rewTrials{1}) && ~isempty(vr.rewTrials{2})
     
-    switchFromTo = [vr.before_change_freq_high_value vr.after_change_freq_high_value]; disp(switchFromTo)
+    switchFromTo = [vr.before_change_freq_high_value vr.after_change_freq_high_value]; display(switchFromTo)
     
     percent_before_after_track1 = [sum(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing))/length(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing)) sum(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))/length(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))];
     summary.percent_before_after_track1 = [sum(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing))/length(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing)) sum(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))/length(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))];
@@ -1124,8 +1129,8 @@ if vr.env_change_flag ==1 && vr.trialNum_change_timing > 1 && ~isempty(vr.rewTri
     summary.percent_before_after_track2 = [sum(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing))/length(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing)) sum(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))];
 
     
-    context1_percentRew = [percent_before_after_track1(1) percent_before_after_track1(2)];display(context1_percentRew)
-    context2_percentRew = [percent_before_after_track2(1) percent_before_after_track2(2)];display(context2_percentRew)
+    context1_percentRew = [percent_before_after_track1(1) percent_before_after_track2(1)];display(context1_percentRew)
+    context2_percentRew = [percent_before_after_track1(2) percent_before_after_track2(2)];display(context2_percentRew)
 end
 
 answer = inputdlg({'mouse','Comment'},'Question',[1; 5]);
