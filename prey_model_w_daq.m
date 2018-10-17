@@ -526,7 +526,7 @@ if vr.ITI==0 && vr.abort_flag ==0
         if vr.start_flag == 0 && vr.startTrial_SW>vr.start_latency_CRIT && nanmax(vr.spd_circ_queue_start(~isnan(vr.spd_circ_queue_start))) < vr.START_CRIT
             disp('mouse aborted trial')
             vr.ITI=1.5; % initialize ITI after abort trial
-            vr.rewTrials{vr.B} = [vr.rewTrials{vr.B} 0]; % add zero for unrew trial
+            vr.rewTrials{vr.currentB} = [vr.rewTrials{vr.currentB} 0]; % add zero for unrew trial
             vr.abort_flag = 1;
             vr.RewSize = 0;
             vr.engageLatency_thisTrial =0;
@@ -855,11 +855,11 @@ if vr.ITI > 0
     %if it is okay to start a new trial
     if vr.okNewTrial==1
         %display the previous trial reward
-        if isempty(vr.rewTrials{vr.B})
+        if isempty(vr.rewTrials{vr.currentB})
             prevRew=0;
         else
-            if vr.rewTrials{vr.B}(end)>0
-                prevRew=vr.A;
+            if vr.rewTrials{vr.currentB}(end)>0
+                prevRew=vr.currentA;
             else
                 prevRew=0;
             end
