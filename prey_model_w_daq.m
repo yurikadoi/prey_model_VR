@@ -210,13 +210,13 @@ switch vr.mouseID
         vr.y_disposition = 0.15;% determines the speed of movement of track
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
-        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
         vr.brightness = .6;
         
         if vr.debugYurika == 0
-            vr.freq_high_value=vr.lambda_1B;
+            vr.freq_high_value=vr.lambda_1A;
             vr.freq_low_value=vr.lambda_2;
             
         else
@@ -250,13 +250,13 @@ switch vr.mouseID
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         
-        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
         vr.change_timing = 20*60; %at what seconds, does the environment change
         
         vr.brightness = .6;
         
         if vr.debugYurika == 0
-            vr.freq_high_value=vr.lambda_1B;
+            vr.freq_high_value=vr.lambda_1A;
             vr.freq_low_value=vr.lambda_2;
             
         else
@@ -1016,7 +1016,7 @@ if isnan(x) ~= 1
             if ~isempty(vr.rewTrials{1}) && ~isempty(vr.rewTrials{2})
                 vr.percentRew_1 = [sum(vr.rewTrials{1})/length(vr.rewTrials{1})];
                 vr.median_engageLatency_1=median(vr.engageLatency{1});
-                vr.percentRew_2 = [sum(vr.rewTrials{1})/length(vr.rewTrials{2})];
+                vr.percentRew_2 = [sum(vr.rewTrials{2})/length(vr.rewTrials{2})];
                 vr.median_engageLatency_2=median(vr.engageLatency{2});
                 overall_percentRew=[vr.percentRew_1 vr.percentRew_2]; display(overall_percentRew);
                 overall_median_engage_latency=[vr.median_engageLatency_1 vr.median_engageLatency_2]; display(overall_median_engage_latency);
