@@ -210,8 +210,8 @@ switch vr.mouseID
         vr.y_disposition = 0.15;% determines the speed of movement of track
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
-        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
-        vr.change_timing = 20*60; %at what seconds, does the environment change
+        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.change_timing = 1*60; %at what seconds, does the environment change
         
         vr.brightness = .6;
         
@@ -935,6 +935,7 @@ if vr.ITI > 0
         end
         if vr.changed_or_not_yet_flag == 1 % when the env changes, store the trial number and the time of the changing timing
             disp('environment change');
+
             vr.trialNum_change_timing = vr.trialNum;
             vr.trialNum_in_track1_change_timing = length(vr.rewTrials{1}) + 1;
             vr.trialNum_in_track2_change_timing = length(vr.rewTrials{2}) + 1;
@@ -1054,6 +1055,10 @@ if vr.event_newTrial > 0 % sent AO signal for new trial signaling trial type
     disp('event_newTrial');
     
     out_data = vr.event_newTrial_outdata{vr.B}{vr.A};
+    if vr.changed_or_not_yet_flag == 1 % when the env changes, store the trial number and the time of the changing timing
+        disp('environment change');
+        out_data=[zeros(10,1) (-(vr.A+.5))*ones(10,1) zeros(10,1) zeros(10,1)];
+    end
     if vr.daq_flag == 1
         putdata(vr.ao, out_data);
         start(vr.ao);
@@ -1170,16 +1175,3 @@ if ~isempty(answer)
         movefile([daqPath '\' daqDir(end).name],[vr.pathname '\' answer{1} '\' sessionDate '\DaqData',datestr(now,'mmdd'),'.daq']);
     end
 end
-© 2018 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Help
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
-Press h to open a hovercard with more details.
