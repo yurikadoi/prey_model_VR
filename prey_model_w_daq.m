@@ -31,7 +31,7 @@ vr.startTime = datestr(rem(now,1));
 vr.startT = now;
 
 %%
-vr.daq_flag = 0;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
+vr.daq_flag = 1;%daq_flag is 1 when running on the experiment room pc with daq board connceted. it is zero when just running on my laptop
 %%
 vr.startLocation=0;
 %vr.currTrack_ID=1;
@@ -138,7 +138,7 @@ end
 %%
 vr.totalWater = 0; % keep track of water earned
 vr.preyData=[]; %storing vr.trialNum vr.CBA vr.RewSize vr.engageLatency vr.wait4stop_SW vr.searchtime_SW
-vr.trialNum = 1;% keep track of trial number
+vr.trialNum = 0;% keep track of trial number
 vr.RewSize = 0; %store reward size
 vr.lastRewEarned = [];% keep track of the time when the last reward is earned
 %% initialize A,B,C
@@ -211,7 +211,7 @@ switch vr.mouseID
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
         vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
-        vr.change_timing = 1*60; %at what seconds, does the environment change
+        vr.change_timing = .5*60; %at what seconds, does the environment change
         
         vr.brightness = .6;
         
@@ -1033,11 +1033,14 @@ if isnan(x) ~= 1
                 
                 switchFromTo = [vr.before_change_freq_high_value vr.after_change_freq_high_value]; display(switchFromTo)
                 display(vr.rewTrials{1})
+                display(vr.rewTrials{2})
+                display(vr.trialNum_in_track1_change_timing)
+                
                 display(vr.trialNum_in_track2_change_timing)
                 
-                percent_before_after_track1 = [sum(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing))/length(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing)) sum(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))/length(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))];
+                percent_before_after_track1 = [sum(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing-1))/length(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing-1)) sum(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))/length(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))];
                 
-                percent_before_after_track2 = [sum(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing))/length(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing)) sum(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))];
+                percent_before_after_track2 = [sum(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing-1))/length(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing-1)) sum(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))];
 
                 context1_percentRew = [percent_before_after_track1(1) percent_before_after_track2(1)];display(context1_percentRew)
                 context2_percentRew = [percent_before_after_track1(2) percent_before_after_track2(2)];display(context2_percentRew)
@@ -1124,11 +1127,11 @@ if vr.env_change_flag ==1 && vr.trialNum_change_timing > 1 && ~isempty(vr.rewTri
     
     switchFromTo = [vr.before_change_freq_high_value vr.after_change_freq_high_value]; display(switchFromTo)
     
-    percent_before_after_track1 = [sum(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing))/length(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing)) sum(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))/length(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))];
-    summary.percent_before_after_track1 = [sum(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing))/length(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing)) sum(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))/length(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))];
+    percent_before_after_track1 = [sum(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing-1))/length(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing-1)) sum(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))/length(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))];
+    summary.percent_before_after_track1 = [sum(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing-1))/length(vr.rewTrials{1}(1:vr.trialNum_in_track1_change_timing-1)) sum(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))/length(vr.rewTrials{1}(vr.trialNum_in_track1_change_timing:end))];
     
-    percent_before_after_track2 = [sum(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing))/length(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing)) sum(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))];
-    summary.percent_before_after_track2 = [sum(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing))/length(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing)) sum(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))];
+    percent_before_after_track2 = [sum(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing-1))/length(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing-1)) sum(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))];
+    summary.percent_before_after_track2 = [sum(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing-1))/length(vr.rewTrials{2}(1:vr.trialNum_in_track2_change_timing-1)) sum(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))/length(vr.rewTrials{2}(vr.trialNum_in_track2_change_timing:end))];
 
     
     context1_percentRew = [percent_before_after_track1(1) percent_before_after_track2(1)];display(context1_percentRew)
