@@ -20,10 +20,11 @@ if ~vr.debugMode
     
     % TrialSE, Reward can be changed to digital input (second port) after
     % confirming that the timestamp is same between AI and DI
-    cAI_ChannelName = {'freechannel','VelY','Lick','Events','RewValve','Photo1','Photo2','OptoLaser'};
+    cAI_ChannelName = {'Velocity','Lick','RewValve','Events'};%,'Photo1','Photo2','OptoLaser'};
     
     switch( DAQ_MODE)
         case 'legacy'
+            display('sanity check')
             %reset DAQ in case it's still in use by a previous Matlab program
             daqreset;
             % initalize and start analog input

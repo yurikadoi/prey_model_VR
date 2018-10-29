@@ -1,3 +1,5 @@
+% last edits: MB 10-28-18 12:30pm
+
 %coin heads: prey will presented, coin tails: prey will not presented
 
 function code = prey_model_w_daq
@@ -210,13 +212,14 @@ switch vr.mouseID
         vr.y_disposition = 0.15;% determines the speed of movement of track
         
         vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
-        vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
-        vr.change_timing = .5*60; %at what seconds, does the environment change
+        
+        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+        vr.change_timing = 20*60; %at what seconds, does the environment change
         
         vr.brightness = .6;
         
         if vr.debugYurika == 0
-            vr.freq_high_value=vr.lambda_1A;
+            vr.freq_high_value=vr.lambda_1B;
             vr.freq_low_value=vr.lambda_2;
             
         else
@@ -227,8 +230,8 @@ switch vr.mouseID
         end
         
         if vr.env_change_flag ==1 %if changing the environment in the middle of a session
-            vr.before_change_freq_high_value = vr.lambda_1B;
-            vr.after_change_freq_high_value = vr.lambda_1C;
+            vr.before_change_freq_high_value = vr.lambda_1C;
+            vr.after_change_freq_high_value = vr.lambda_1B;
         end
     case 2
         disp('mouse #2: skywalker');
@@ -256,7 +259,7 @@ switch vr.mouseID
         vr.brightness = .6;
         
         if vr.debugYurika == 0
-            vr.freq_high_value=vr.lambda_1A;
+            vr.freq_high_value=vr.lambda_1B;
             vr.freq_low_value=vr.lambda_2;
             
         else
@@ -267,8 +270,8 @@ switch vr.mouseID
         end
         
         if vr.env_change_flag ==1 %if changing the environment in the middle of a session
-            vr.before_change_freq_high_value = vr.lambda_1B;
-            vr.after_change_freq_high_value = vr.lambda_1C;
+            vr.before_change_freq_high_value = vr.lambda_1C;
+            vr.after_change_freq_high_value = vr.lambda_1B;
         end
     case 3
         disp('mouse 3');
@@ -319,7 +322,7 @@ vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
 
 %%
 vr.onLg_h2o = 4; vr.onSm_h2o = 2;
-vr.LgRew = 25; vr.SmRew = 12.5;  %8-1-18 calibrated
+vr.LgRew = 25; vr.SmRew = 13;  %calibrated temporally on 10/26/18
 %%
 %set rew valve open times
 vr.SR = 1000;
@@ -375,7 +378,7 @@ if vr.daq_flag == 1
             display(datestr(now));
             
             [data, time, abstime] = getdata(vr.ai, vr.ai.SamplesAvailable*1.02);
-            figure; plot(time, data(:, [2 3 4 5])); % plot analog input
+            figure; plot(time, data(:, [1 2 3 4])); % plot analog input
         end
     end
 end
@@ -384,7 +387,9 @@ function vr = runtimeCodeFun(vr)
 vr.sessionTimer_SW = vr.sessionTimer_SW + vr.dt;
 
 vr.dp_cache = vr.dp; % cache current velocity so value measured even if changed to zero
-
+%cache = vr.dp_cache; display(cache)
+%vr.dp(:,2:end)=0;
+%dp = vr.dp; display(dp)
 %start the trial timer
 if vr.trialTimer_On>0
     vr.trialTimer_SW = vr.trialTimer_SW + vr.dt;
@@ -432,6 +437,7 @@ if vr.ITI==0 && vr.abort_flag ==0
                 trigger(vr.ao);
             end
         end
+        
         vr.dp=[0 vr.y_disposition 0 0];%move the track in a constant speed
         vr.engagingSW = vr.engagingSW + vr.dt;% add time passed to the engaging SW
     end
@@ -1071,7 +1077,7 @@ if vr.daq_flag==1
         vr.plotAI=0;
         data = peekdata(vr.ai, min([vr.ai.SamplesAvailable*1.02 vr.SR * 20])); % 1000 * 8
         flushdata(vr.ai, 'all');
-        plot(data(:,2:5))
+        plot(data(:,1:4))
     end
 end
 
