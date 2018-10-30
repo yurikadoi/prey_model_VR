@@ -192,127 +192,55 @@ vr.progRatio_short_Dist = [20 30 40 50 60 70 80 90 100];
 vr.progRatio_long_Dist = 2*vr.progRatio_short_Dist;
 
 %%
+%variables
+vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
+vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
+vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
+
+vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
+vr.queue_len_start=30;
+
+vr.start4engage = 1;%0: if do not need to start running to engage, 1: if they need to start running to engage
+vr.start_latency_CRIT = 5;%within how many seconds should they start running to engage with the trial
+
+vr.progRatioStart = 1;% 9:is the maximum and goal of the training
+
+vr.y_disposition = 0.15;% determines the speed of movement of track
+
+vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
+
+vr.brightness = .6;
+%%
+%env condition
+vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+vr.change_timing = 25*60; %at what seconds, does the environment change
+
+if vr.debugYurika == 0
+    vr.freq_high_value=vr.lambda_1B;
+    vr.freq_low_value=vr.lambda_2;
+    
+else
+    vr.freq_high_value=1/10;
+    vr.freq_low_value=1/10;
+    vr.before_change_freq_high_value = 1/10;
+    vr.after_change_freq_high_value = 1/10;
+end
+
+if vr.env_change_flag ==1 %if changing the environment in the middle of a session
+    vr.before_change_freq_high_value = vr.lambda_1A;
+    vr.after_change_freq_high_value = vr.lambda_1C;
+end
+%%
 %variables that is dependent on individual mouse
 switch vr.mouseID
     case 1
         disp('mouse #1: obiwan');
-        vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
-        vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
-        vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
         vr.STOP_CRIT = 0.025;
         vr.START_CRIT = 0.09;
-        vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
-        vr.queue_len_start=30;
-        
-        vr.start4engage = 1;%0: if do not need to start running to engage, 1: if they need to start running to engage
-        vr.start_latency_CRIT = 5;%within how many seconds should they start running to engage with the trial
-        
-        vr.progRatioStart = 1;% 9:is the maximum and goal of the training
-        
-        vr.y_disposition = 0.15;% determines the speed of movement of track
-        
-        vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
-        
-        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
-        vr.change_timing = 20*60; %at what seconds, does the environment change
-        
-        vr.brightness = .6;
-        
-        if vr.debugYurika == 0
-            vr.freq_high_value=vr.lambda_1B;
-            vr.freq_low_value=vr.lambda_2;
-            
-        else
-            vr.freq_high_value=1/10;
-            vr.freq_low_value=1/10;
-            vr.before_change_freq_high_value = 1/10;
-            vr.after_change_freq_high_value = 1/10;
-        end
-        
-        if vr.env_change_flag ==1 %if changing the environment in the middle of a session
-            vr.before_change_freq_high_value = vr.lambda_1C;
-            vr.after_change_freq_high_value = vr.lambda_1B;
-        end
     case 2
         disp('mouse #2: skywalker');
-        vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
-        vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
-        
-        vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
         vr.STOP_CRIT = 0.025;
-        vr.START_CRIT = 0.12;
-        vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
-        vr.queue_len_start=30;
-        
-        vr.start4engage = 1;%0: if do not need to start running to engage, 1: if they need to start running to engage
-        vr.start_latency_CRIT = 5;%within how many seconds should they start running to engage with the trial
-        
-        vr.progRatioStart = 1;% 9:is the maximum and goal of the training
-        
-        vr.y_disposition = 0.15;% determines the speed of movement of track
-        
-        vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
-        
-        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
-        vr.change_timing = 20*60; %at what seconds, does the environment change
-        
-        vr.brightness = .6;
-        
-        if vr.debugYurika == 0
-            vr.freq_high_value=vr.lambda_1B;
-            vr.freq_low_value=vr.lambda_2;
-            
-        else
-            vr.freq_high_value=1/10;
-            vr.freq_low_value=1/10;
-            vr.before_change_freq_high_value = 1/10;
-            vr.after_change_freq_high_value = 1/10;
-        end
-        
-        if vr.env_change_flag ==1 %if changing the environment in the middle of a session
-            vr.before_change_freq_high_value = vr.lambda_1C;
-            vr.after_change_freq_high_value = vr.lambda_1B;
-        end
-    case 3
-        disp('mouse 3');
-        vr.taskType_ID = [2 4]; % [2 4] track 1 = big reward short distance, track 2 = small reward long distance
-        vr.progRatio_flag = 0;% if not using prog ratio, set it as zero, if using prog ratio set it as one
-        
-        vr.wait4stop=1;%0: if do not need to wait for stop, 1: if they need to stop to initiate the new trial
-        vr.STOP_CRIT = 0.025;
-        vr.START_CRIT = 0.07;
-        vr.queue_len_stop = 30; % begin training w ~.5s, then increase to 1s after learned to stop (same as stop to abort trial)
-        vr.queue_len_start=30;
-        
-        vr.start4engage = 1;%0: if do not need to start running to engage, 1: if they need to start running to engage
-        vr.start_latency_CRIT = 5;%within how many seconds should they start running to engage with the trial
-        
-        vr.progRatioStart = 1;% 9:is the maximum and goal of the training
-        
-        vr.y_disposition = 0.15;% determines the speed of movement of track
-        
-        vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear either after reward or abort
-        
-        vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
-        vr.change_timing = 20*60; %at what seconds, does the environment change
-        
-        vr.brightness = .8;
-        
-        if vr.debugYurika == 0
-            vr.freq_high_value=vr.lambda_1B;
-            vr.freq_low_value=vr.lambda_2;
-            
-        else
-            vr.freq_high_value=1/10;
-            vr.freq_low_value=1/10;
-            vr.before_change_freq_high_value = 1/10;
-            vr.after_change_freq_high_value = 1/10;
-        end
-        
-        if vr.env_change_flag ==1 %if changing the environment in the middle of a session
-            vr.before_change_freq_high_value = vr.lambda_1A;
-            vr.after_change_freq_high_value = vr.lambda_1C;
-        end
+        vr.START_CRIT = 0.1;
     otherwise
         disp('error: MOUSE ID NOT RECOGNIZED');
 end
