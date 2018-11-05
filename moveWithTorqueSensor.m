@@ -13,7 +13,7 @@ data(f,:) = [];
 data = mean(data,1)';
 data(isnan(data)) = 0;
 
-velocity(2) = vr.scaling(2)*(data(5) - idle_voltage_offset(5));  % HRK 1/19/2015 changed mouse position for rotation accuracy
+velocity(2) = vr.scaling(2)*(data(1) - idle_voltage_offset(1));  % HRK 1/19/2015 changed mouse position for rotation accuracy
 
 
 if isnan(velocity(2))

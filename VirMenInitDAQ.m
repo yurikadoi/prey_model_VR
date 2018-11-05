@@ -20,7 +20,7 @@ if ~vr.debugMode
     
     % TrialSE, Reward can be changed to digital input (second port) after
     % confirming that the timestamp is same between AI and DI
-    cAI_ChannelName = {'Velocity','Lick','RewValve','Events','Rotaryencoder'};%,'Photo1','Photo2','OptoLaser'};
+    cAI_ChannelName = {'RotaryEncoder_Velocity','Lick','RewValve','Events'};%,'Photo1','Photo2','OptoLaser'};
     
     switch( DAQ_MODE)
         case 'legacy'
