@@ -234,10 +234,10 @@ end
 %%
 %variables that is dependent on individual mouse
 switch vr.mouseID
-    case 1
-        disp('mouse #1: obiwan');
-        vr.STOP_CRIT = 0.025;
-        vr.START_CRIT = 0.08;
+%     case 1
+%         disp('mouse #1: obiwan');
+%         vr.STOP_CRIT = 0.025;
+%         vr.START_CRIT = 0.08;
     case 2
         disp('mouse #2: skywalker');
         vr.STOP_CRIT = 0.025;
