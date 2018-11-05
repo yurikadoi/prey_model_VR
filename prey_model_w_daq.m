@@ -19,6 +19,7 @@ code.termination = @terminationCodeFun;
 %% --- INITIALIZATION code: executes before the ViRMEn engine starts.
 function vr = initializationCodeFun(vr)
 global idle_voltage_offset
+vr.idle_voltage_offset = idle_voltage_offset;
 rng('shuffle'); % shuffles random numvisualber generator at start of task
 
 %% retrieves values from ViRMEn GUI
@@ -1008,7 +1009,7 @@ if vr.daq_flag==1
         data = peekdata(vr.ai, min([vr.ai.SamplesAvailable*1.02 vr.SR * 20])); % 1000 * 8
         data_temp=data;
         data_temp(:,1)=-5*(data_temp(:,1)-repmat(idle_voltage_offset(1),[length(data_temp(:,1)),1]));
-        figure; plot(data_temp(:,1:4)); % plot analog input
+        plot(data_temp(:,1:4)); % plot analog input
         flushdata(vr.ai, 'all');
     end
 end
