@@ -1,7 +1,7 @@
 % last edits: MB 10-28-18 12:30pm
 
 %coin heads: prey will presented, coin tails: prey will not presented
-
+ 
 function code = prey_model_w_daq
 
 % prey model   Code for the ViRMEn experiment xForaging.
@@ -18,7 +18,7 @@ code.termination = @terminationCodeFun;
 
 %% --- INITIALIZATION code: executes before the ViRMEn engine starts.
 function vr = initializationCodeFun(vr)
-
+global idle_voltage_offset
 rng('shuffle'); % shuffles random numvisualber generator at start of task
 
 %% retrieves values from ViRMEn GUI
@@ -212,11 +212,11 @@ vr.wait4reappear_CRIT=2;% how long (minimum) it takes for the patch to reappear 
 vr.brightness = .6;
 %%
 %env condition
-vr.env_change_flag = 1;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
+vr.env_change_flag = 0;% whether the environment (namely, the frequency of high-value prey) changes during a session or not
 vr.change_timing = 25*60; %at what seconds, does the environment change
 
 if vr.debugYurika == 0
-    vr.freq_high_value=vr.lambda_1B;
+    vr.freq_high_value=vr.lambda_1A;
     vr.freq_low_value=vr.lambda_2;
     
 else
@@ -227,8 +227,8 @@ else
 end
 
 if vr.env_change_flag ==1 %if changing the environment in the middle of a session
-    vr.before_change_freq_high_value = vr.lambda_1A;
-    vr.after_change_freq_high_value = vr.lambda_1C;
+    vr.before_change_freq_high_value = vr.lambda_1C;
+    vr.after_change_freq_high_value = vr.lambda_1A;
 end
 %%
 %variables that is dependent on individual mouse
@@ -236,11 +236,11 @@ switch vr.mouseID
     case 1
         disp('mouse #1: obiwan');
         vr.STOP_CRIT = 0.025;
-        vr.START_CRIT = 0.09;
+        vr.START_CRIT = 0.08;
     case 2
         disp('mouse #2: skywalker');
         vr.STOP_CRIT = 0.025;
-        vr.START_CRIT = 0.1;
+        vr.START_CRIT = 0.12;
     otherwise
         disp('error: MOUSE ID NOT RECOGNIZED');
 end
@@ -250,7 +250,7 @@ vr.spd_circ_queue_start= zeros(vr.queue_len_stop, 1);
 
 %%
 vr.onLg_h2o = 4; vr.onSm_h2o = 2;
-vr.LgRew = 25; vr.SmRew = 13;  %calibrated temporally on 10/26/18
+vr.LgRew = 22.5; vr.SmRew = 12.5;  %calibrated temporally on 11/5/18
 %%
 %set rew valve open times
 vr.SR = 1000;
@@ -306,12 +306,15 @@ if vr.daq_flag == 1
             display(datestr(now));
             
             [data, time, abstime] = getdata(vr.ai, vr.ai.SamplesAvailable*1.02);
-            figure; plot(time, data(:, [1 2 3 4])); % plot analog input
+            data_temp=data;
+            data_temp(:,1)=-5*(data_temp(:,1)-repmat(idle_voltage_offset(1),[length(data_temp(:,1)),1]));
+            figure; plot(time, data_temp(:,1:4)); % plot analog input
         end
     end
 end
 %% --- RUNTIME code: executes on every iteration of the ViRMEn engine.
 function vr = runtimeCodeFun(vr)
+global idle_voltage_offset
 vr.sessionTimer_SW = vr.sessionTimer_SW + vr.dt;
 
 vr.dp_cache = vr.dp; % cache current velocity so value measured even if changed to zero
@@ -966,8 +969,7 @@ if isnan(x) ~= 1
             if vr.env_change_flag ==1 && vr.trialNum_change_timing > 1 && ~isempty(vr.rewTrials{1}) && ~isempty(vr.rewTrials{2}) && vr.changed_or_not_yet_flag > 1
                 
                 switchFromTo = [vr.before_change_freq_high_value vr.after_change_freq_high_value]; display(switchFromTo)
-                display(vr.rewTrials{1})
-                display(vr.rewTrials{2})
+                
                 display(vr.trialNum_in_track1_change_timing)
                 
                 display(vr.trialNum_in_track2_change_timing)
@@ -1004,14 +1006,16 @@ if vr.daq_flag==1
     if vr.plotAI>0 && vr.plot_SW > 2% plot relevant data from analog input from previous trial 2 sec after reward
         vr.plotAI=0;
         data = peekdata(vr.ai, min([vr.ai.SamplesAvailable*1.02 vr.SR * 20])); % 1000 * 8
+        data_temp=data;
+        data_temp(:,1)=-5*(data_temp(:,1)-repmat(idle_voltage_offset(1),[length(data_temp(:,1)),1]));
+        figure; plot(data_temp(:,1:4)); % plot analog input
         flushdata(vr.ai, 'all');
-        plot(data(:,1:4))
     end
 end
 
 %% --- TERMINATION code: executes after the ViRMEn engine stops.
 function vr = terminationCodeFun(vr)
-  
+global idle_voltage_offset
 if vr.daq_flag == 1
     if ~vr.debugMode
         fclose all;
