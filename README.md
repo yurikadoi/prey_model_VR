@@ -16,3 +16,7 @@ Open arduino software. Make sure the device and port is specified as teensy.
 Open RotaryEncoderAO_cont.ino (Obtained from HyungGoo).
 Verify the code and upload it.
 Once the upload is completed, check the singal in the test pannel in NIMAX software. Use RSE.
+# prey model analysis
+there is an event trigger that's sent when the switch happens (starting on Oct 18th)
+which is (-(vr.A+.5)) instead of normal track App event signal
+its either -2.5 or -4.5
