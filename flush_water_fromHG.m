@@ -106,3 +106,6 @@ yl = ylim;
 hold on; plot(idle_voltage_offset(2), yl(2),'v'); hold off;
 title(sprintf('Ch1, median+-std: %f +- %f', idle_voltage_offset(2), std(data(:,2))));
 xlabel('Time (s)'); ylabel('Signal (V)');
+%%
+pathname = 'C:\ViRMEn\ViRMeN_data\patchForaging\init\';
+save([pathname date '.mat'],'idle_voltage_offset');
